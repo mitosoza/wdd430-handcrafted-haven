@@ -34,3 +34,16 @@ export type Review = {
   user_id: string;
 };
 
+export type Revenue = {
+  month: string;
+  revenue: number;
+};
+
+export type LatestInvoice = {
+  id: string;
+  image_url: string;
+  name: string;
+  email: string;
+  amount: string;
+};
+

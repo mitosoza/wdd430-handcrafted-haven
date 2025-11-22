@@ -28,6 +28,12 @@ export default function Page() {
           >
             <span>Log in</span> <ArrowRightIcon className="w-5 md:w-6" />
           </Link>
+          <Link
+            href="/products"
+            className="flex items-center gap-3 self-start rounded-lg border border-blue-500 px-6 py-3 text-sm font-medium text-blue-500 transition-colors hover:bg-blue-50 md:text-base"
+          >
+            <span>View Products</span>
+          </Link>
         </div>
         <div className="flex items-center justify-center p-6 md:w-3/5 md:px-28 md:py-12">
           {/* Add Hero Images Here */}
