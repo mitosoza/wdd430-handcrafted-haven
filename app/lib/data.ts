@@ -44,3 +44,4 @@ const data = await sql<User[]>`
     throw new Error('Failed to fetch users.');
   }
 }
+
