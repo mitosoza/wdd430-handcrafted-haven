@@ -1,14 +1,12 @@
 'use client';
- 
+
 
 import { useActionState } from 'react';
 import { createProduct, State } from '@/app/lib/actions';
-import { Product } from '@/app/lib/definitions';
-import Link from 'next/link';
 import { Button } from '@/app/ui/button';
 
 
-export default function form(){
+export default function Form() {
     const initialState: State = { message: null, errors: {} };
 
     const [state, formAction] = useActionState<State, FormData>(
