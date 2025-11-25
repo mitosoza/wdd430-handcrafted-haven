@@ -4,121 +4,129 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import postgres from 'postgres';
-import { signIn } from '@/auth';
+import { signIn } from 'next-auth/react';
 import { AuthError } from 'next-auth';
 
-if (!process.env.POSTGRES_URL) {
-  throw new Error('POSTGRES_URL environment variable is not set');
-}
-
-const sql = postgres(process.env.POSTGRES_URL, { ssl: 'require' });
+const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
 const FormSchema = z.object({
-  id: z.string(),
-  customerId: z.string({
-    invalid_type_error: 'Please select a customer.',
+  product_id: z.string(),
+  price: z.string(),
+  product_name: z.string({
+    invalid_type_error: 'Please enter a valid product',
   }),
-  amount: z.coerce
-    .number()
-    .gt(0, { message: 'Please enter an amount greater than $0.' }),
-  status: z.enum(['pending', 'paid'], {
-    invalid_type_error: 'Please select an invoice status.',
-  }),
-  date: z.string(),
-});
-
-const CreateInvoice = FormSchema.omit({ id: true, date: true });
-const UpdateInvoice = FormSchema.omit({ id: true, date: true });
+  product_description: z.string(),
+  seller_id: z.string()
+}); 
 
 export type State = {
   errors?: {
-    customerId?: string[];
-    amount?: string[];
-    status?: string[];
+    product_id?: string[];
+    product_name?: string[];
+    product_description?: string[];
+    product_image?: string[];
+    price?: string[];
+    seller_id?: string[];
   };
   message?: string | null;
 };
 
-export async function createInvoice(prevState: State, formData: FormData) {
+
+const CreateProduct = FormSchema; 
+
+export async function createProduct(
+  prevState: State,
+  formData: FormData,
+): Promise<State> {
   // Validate form using Zod
-  const validatedFields = CreateInvoice.safeParse({
-    customerId: formData.get('customerId'),
-    amount: formData.get('amount'),
-    status: formData.get('status'),
+  const validated = CreateProduct.safeParse({
+    product_id: formData.get('product_id'),
+    price: formData.get('price'),
+    product_name: formData.get('product_name'),
+    product_description: formData.get('product_description'),
+    seller_id: formData.get('seller_id'),
   });
 
-  // If form validation fails, return errors early. Otherwise, continue.
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Missing Fields. Failed to Create Invoice.',
-    };
+  if (!validated.success) {
+    const fieldErrors = validated.error.format();
+    const errors: State['errors'] = {};
+    // Map zod errors to our State.errors structure
+    for (const key of Object.keys(fieldErrors)) {
+      // @ts-ignore - formatting keys may include _errors
+      const val = fieldErrors[key];
+      if (val && typeof val === 'object' && Array.isArray((val as any)._errors)) {
+        // @ts-ignore
+        errors[key as keyof State['errors']] = (val as any)._errors as string[];
+      }
+    }
+
+    return { ...prevState, errors };
   }
 
-  // Prepare data for insertion into the database
-  const { customerId, amount, status } = validatedFields.data;
-  const amountInCents = amount * 100;
-  const date = new Date().toISOString().split('T')[0];
-
+  // Successful validation - return a success message. You can add DB insert logic here.
   // Insert data into the database
   try {
     await sql`
-      INSERT INTO invoices (customer_id, amount, status, date)
-      VALUES (${customerId}, ${amountInCents}, ${status}, ${date})
+      INSERT INTO public.products (product_id, price, product_name, product_description, seller_id)
+      VALUES (${validated.data.product_id}, ${validated.data.price}, ${validated.data.product_name}, ${validated.data.product_description}, ${validated.data.seller_id})
     `;
+
+    // Revalidate the catalog page cache so the new product appears.
+    revalidatePath('/catalog');
+
+    return { message: 'Product created', errors: {} };
   } catch (error) {
     // If a database error occurs, return a more specific error.
     return {
-      message: 'Database Error: Failed to Create Invoice.',
+      message: 'Database Error: Failed to create product.',
+      errors: {},
     };
   }
-
-  // Revalidate the cache for the invoices page and redirect the user.
-  revalidatePath('/dashboard/invoices');
-  redirect('/dashboard/invoices');
+  // Note: redirect handled by the client if desired. Server action returns status.
 }
 
-export async function updateInvoice(
+export async function updateProduct(
   id: string,
   prevState: State,
   formData: FormData,
-) {
-  const validatedFields = UpdateInvoice.safeParse({
-    customerId: formData.get('customerId'),
-    amount: formData.get('amount'),
-    status: formData.get('status'),
+): Promise<State> {
+  const validated = CreateProduct.safeParse({
+    product_id: formData.get('product_id') ?? id,
+    price: formData.get('price'),
+    product_name: formData.get('product_name'),
+    product_description: formData.get('product_description'),
+    seller_id: formData.get('seller_id'),
   });
 
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Missing Fields. Failed to Update Invoice.',
-    };
+  if (!validated.success) {
+    const fieldErrors = validated.error.format();
+    const errors: State['errors'] = {};
+    for (const key of Object.keys(fieldErrors)) {
+      // @ts-ignore
+      const val = fieldErrors[key];
+      if (val && typeof val === 'object' && Array.isArray((val as any)._errors)) {
+        // @ts-ignore
+        errors[key as keyof State['errors']] = (val as any)._errors as string[];
+      }
+    }
+    return { ...prevState, errors };
   }
-
-  const { customerId, amount, status } = validatedFields.data;
-  const amountInCents = amount * 100;
 
   try {
     await sql`
-      UPDATE invoices
-      SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
-      WHERE id = ${id}
+      UPDATE public.products
+      SET price = ${validated.data.price},
+          product_name = ${validated.data.product_name},
+          product_description = ${validated.data.product_description},
+          seller_id = ${validated.data.seller_id}
+      WHERE product_id = ${id}
     `;
+
+    revalidatePath('/catalog');
+    return { message: 'Product updated', errors: {} };
   } catch (error) {
-    return {
-      message: 'Database Error: Failed to Update Invoice.',
-    };
+    return { message: 'Database Error: Failed to update product.', errors: {} };
   }
-
-  revalidatePath('/dashboard/invoices');
-  redirect('/dashboard/invoices');
-}
-
-export async function deleteInvoice(id: string) {
-  // throw new Error('Failed to Delete Invoice');
-  await sql`DELETE FROM invoices WHERE id = ${id}`;
-  revalidatePath('/dashboard/invoices');
 }
 
 export async function authenticate(
