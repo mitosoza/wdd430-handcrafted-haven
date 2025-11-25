@@ -2,12 +2,11 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import postgres from 'postgres';
 import { signIn } from 'next-auth/react';
 import { AuthError } from 'next-auth';
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
+const sql = postgres(process.env.POSTGRES_URL || '', { ssl: 'require' });
 
 const FormSchema = z.object({
   product_id: z.string(),
@@ -17,7 +16,7 @@ const FormSchema = z.object({
   }),
   product_description: z.string(),
   seller_id: z.string()
-}); 
+});
 
 export type State = {
   errors?: {
@@ -32,7 +31,7 @@ export type State = {
 };
 
 
-const CreateProduct = FormSchema; 
+const CreateProduct = FormSchema;
 
 export async function createProduct(
   prevState: State,
@@ -52,11 +51,9 @@ export async function createProduct(
     const errors: State['errors'] = {};
     // Map zod errors to our State.errors structure
     for (const key of Object.keys(fieldErrors)) {
-      // @ts-ignore - formatting keys may include _errors
-      const val = fieldErrors[key];
-      if (val && typeof val === 'object' && Array.isArray((val as any)._errors)) {
-        // @ts-ignore
-        errors[key as keyof State['errors']] = (val as any)._errors as string[];
+      const val = (fieldErrors as any)[key];
+      if (val && typeof val === 'object' && Array.isArray(val._errors)) {
+        (errors as any)[key] = val._errors as string[];
       }
     }
 
@@ -102,11 +99,9 @@ export async function updateProduct(
     const fieldErrors = validated.error.format();
     const errors: State['errors'] = {};
     for (const key of Object.keys(fieldErrors)) {
-      // @ts-ignore
-      const val = fieldErrors[key];
-      if (val && typeof val === 'object' && Array.isArray((val as any)._errors)) {
-        // @ts-ignore
-        errors[key as keyof State['errors']] = (val as any)._errors as string[];
+      const val = (fieldErrors as any)[key];
+      if (val && typeof val === 'object' && Array.isArray(val._errors)) {
+        (errors as any)[key] = val._errors as string[];
       }
     }
     return { ...prevState, errors };
