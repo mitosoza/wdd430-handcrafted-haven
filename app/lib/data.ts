@@ -44,3 +44,61 @@ export async function fetchUsers() {
   }
 }
 
+export async function fetchSellerById(id: string) {
+  try {
+    const rows = await sql`
+      SELECT seller_id, seller_first_name, seller_last_name, seller_email, seller_image
+      FROM public.sellers
+      WHERE seller_id = ${id}
+      LIMIT 1
+    `;
+
+    const row = rows && rows[0];
+    if (!row) return null;
+
+    const seller: Seller = {
+      seller_id: row.seller_id,
+      seller_first_name: row.seller_first_name ?? '',
+      seller_email: row.seller_email ?? '',
+      seller_image: row.seller_image ?? '',
+      seller_password: row.seller_password ?? '',
+    } as Seller;
+
+    
+
+    return seller;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch seller');
+  }
+}
+
+export async function fetchProductById(id: string) {
+  try {
+    const rows = await sql`
+      SELECT product_id, price, product_image, product_description, seller_id, product_name
+      FROM public.products
+      WHERE product_id = ${id}
+      LIMIT 1
+    `;
+
+    const row = rows && rows[0];
+    if (!row) return null;
+
+    // Map DB row (product_id) to Product shape (id)
+    const product: Product = {
+      id: row.product_id ?? String(id),
+      product_description: row.product_description ?? '',
+      price: row.price ?? '0',
+      product_name: row.product_name ?? '',
+      seller_id: row.seller_id ?? '',
+      product_image: row.product_image ?? '',
+    };
+
+    return product;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch product');
+  }
+}
+
