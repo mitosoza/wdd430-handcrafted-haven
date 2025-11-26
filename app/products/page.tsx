@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { fetchProducts } from '@/app/lib/data';
+import { fetchProducts, fetchSellers } from '@/app/lib/data';
 import { formatCurrency } from '@/app/lib/utils';
 import ImageWithFallback from '@/app/ui/products/image-with-fallback';
 import fs from 'fs';
@@ -7,7 +7,7 @@ import path from 'path';
 
 export default async function Page() {
   const products = (await fetchProducts()) ?? [];
-
+  fetchSellers();
   return (
     <main suppressHydrationWarning={true} className="p-6">
       <h1 className="mb-6 text-2xl font-semibold">Products</h1>
@@ -104,7 +104,7 @@ export default async function Page() {
 
                   <div className="mt-6 flex items-center justify-center gap-4">
                     <button className="rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow hover:bg-blue-500">Add to cart</button>
-                    <Link href={`/products/${id}`} className="text-sm font-medium text-gray-700 underline">
+                    <Link href={`/products/${id}/show`} className="text-sm font-medium text-gray-700 underline">
                       View
                     </Link>
                   </div>
