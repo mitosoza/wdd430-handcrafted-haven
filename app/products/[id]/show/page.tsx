@@ -66,6 +66,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               <span className="rounded-full bg-gray-100 px-4 py-2 text-lg font-semibold">{formatCurrency(Number(product.price))}</span>
               <button className="rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow hover:bg-blue-500">Add to cart</button>
               <Link href="/products" className="text-sm text-gray-600 underline">Back to products</Link>
+              <Link className="text-sm text-gray-600 underline" href={`/products/${id}/reviews`}>Reviews</Link>
             </div>
 
             {seller ? (

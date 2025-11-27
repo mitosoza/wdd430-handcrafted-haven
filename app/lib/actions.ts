@@ -177,7 +177,7 @@ export async function updateProduct(
       WHERE product_id = ${id}
     `;
 
-    revalidatePath('/catalog');
+    revalidatePath('/products');
     return { message: 'Product updated', errors: {} };
   } catch (error) {
     return { message: 'Database Error: Failed to update product.', errors: {} };
