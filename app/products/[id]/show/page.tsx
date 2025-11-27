@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { fetchProductById, fetchSellerById } from '@/app/lib/data';
+import { fetchProductById, fetchSellerById, fetchProductsBySellerId } from '@/app/lib/data';
 import ImageWithFallback from '@/app/ui/products/image-with-fallback';
 import { formatCurrency } from '@/app/lib/utils';
 import Link from 'next/link';
@@ -69,8 +69,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             </div>
 
             {seller ? (
+              <Link className="text-sm text-gray-600 underline" href={`/products/${seller.seller_id}/products`}>
               <div className="mt-6 flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100">
+                  
                   <ImageWithFallback src={resolveImage(seller.seller_image)} alt={seller.seller_first_name} className="w-full h-full object-cover" />
                 </div>
                 <div>
@@ -78,6 +80,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                   <div className="text-xs text-gray-500">{seller.seller_email}</div>
                 </div>
               </div>
+              </Link>
             ) : (
               <div className="mt-6 text-sm text-gray-500">Seller ID: {product.seller_id}</div>
             )}

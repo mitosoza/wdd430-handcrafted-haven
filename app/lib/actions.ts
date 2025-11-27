@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache';
 import postgres from 'postgres';
 import { signIn } from 'next-auth/react';
 import { AuthError } from 'next-auth';
+import { writeFile, mkdir } from 'fs/promises';
+import { join } from 'path';
 
 const sql = postgres(process.env.POSTGRES_URL || '', { ssl: 'require' });
 
@@ -31,7 +33,10 @@ export type State = {
 };
 
 
-const CreateProduct = FormSchema;
+const CreateProduct = FormSchema.omit({ product_id: true, seller_id: true }).extend({
+  product_id: z.string().optional(),
+  seller_id: z.string().optional(),
+});
 
 export async function createProduct(
   prevState: State,
@@ -39,11 +44,11 @@ export async function createProduct(
 ): Promise<State> {
   // Validate form using Zod
   const validated = CreateProduct.safeParse({
-    product_id: formData.get('product_id'),
+    product_id: formData.get('product_id') || '',
     price: formData.get('price'),
     product_name: formData.get('product_name'),
     product_description: formData.get('product_description'),
-    seller_id: formData.get('seller_id'),
+    seller_id: '',
   });
 
   if (!validated.success) {
@@ -60,26 +65,81 @@ export async function createProduct(
     return { ...prevState, errors };
   }
 
-  // Successful validation - return a success message. You can add DB insert logic here.
+  // Generate a product_id and seller_id
+  const productId = validated.data.product_id || `p${Date.now()}`;
+  const sellerId = `s${Math.random().toString(36).substring(2, 5)}`;
+
+  let productImage = '';
+
+  // Handle image upload if provided
+  const imageFile = formData.get('product_image') as File | null;
+  if (imageFile && imageFile.size > 0) {
+    try {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!validTypes.includes(imageFile.type)) {
+        return {
+          ...prevState,
+          errors: { product_image: ['Only JPEG, PNG, and WebP images are allowed'] },
+        };
+      }
+
+      // Validate file size (5MB max)
+      const maxSize = 5 * 1024 * 1024;
+      if (imageFile.size > maxSize) {
+        return {
+          ...prevState,
+          errors: { product_image: ['Image size must be less than 5MB'] },
+        };
+      }
+
+      // Convert File to Buffer and save
+      const bytes = await imageFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+
+      // Create directory if it doesn't exist
+      const uploadDir = join(process.cwd(), 'public', 'products');
+      await mkdir(uploadDir, { recursive: true });
+
+      // Generate filename with timestamp to avoid collisions
+      const timestamp = Date.now();
+      const fileExtension = imageFile.type.split('/')[1];
+      const fileName = `${productId}-${timestamp}.${fileExtension}`;
+      const filePath = join(uploadDir, fileName);
+
+      // Save file
+      await writeFile(filePath, buffer);
+
+      // Store relative path for database
+      productImage = `products/${fileName}`;
+    } catch (error) {
+      console.error('Image upload error:', error);
+      return {
+        ...prevState,
+        errors: { product_image: ['Failed to upload image'] },
+      };
+    }
+  }
+
   // Insert data into the database
   try {
     await sql`
-      INSERT INTO public.products (product_id, price, product_name, product_description, seller_id)
-      VALUES (${validated.data.product_id}, ${validated.data.price}, ${validated.data.product_name}, ${validated.data.product_description}, ${validated.data.seller_id})
+      INSERT INTO public.products (product_id, price, product_name, product_description, seller_id, product_image)
+      VALUES (${productId}, ${validated.data.price}, ${validated.data.product_name}, ${validated.data.product_description}, ${sellerId}, ${productImage})
     `;
 
-    // Revalidate the catalog page cache so the new product appears.
-    revalidatePath('/catalog');
+    // Revalidate the products page cache so the new product appears
+    revalidatePath('/products');
 
-    return { message: 'Product created', errors: {} };
+    return { message: 'Product created successfully!', errors: {} };
   } catch (error) {
+    console.error('Database Error:', error);
     // If a database error occurs, return a more specific error.
     return {
       message: 'Database Error: Failed to create product.',
       errors: {},
     };
   }
-  // Note: redirect handled by the client if desired. Server action returns status.
 }
 
 export async function updateProduct(

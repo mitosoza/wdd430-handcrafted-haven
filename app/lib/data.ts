@@ -102,3 +102,28 @@ export async function fetchProductById(id: string) {
   }
 }
 
+export async function fetchProductsBySellerId(id: string): Promise<Product[]> {
+  try {
+    const rows = await sql`
+      SELECT product_id, price, product_image, product_description, seller_id, product_name
+      FROM public.products
+      WHERE seller_id = ${id}
+    `;
+
+    // Map all rows to Product shape
+    const products: Product[] = rows.map((row: any) => ({
+      id: row.product_id ?? '',
+      product_description: row.product_description ?? '',
+      price: row.price ?? '0',
+      product_name: row.product_name ?? '',
+      seller_id: row.seller_id ?? '',
+      product_image: row.product_image ?? '',
+    }));
+
+    return products;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch products by seller');
+  }
+}
+
