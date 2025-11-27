@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 import {
-  Product, Seller, User
+  Product, Seller, User, Review
 } from './definitions';
 
 const sql = postgres(process.env.POSTGRES_URL || '', { ssl: 'require' });
@@ -41,6 +41,29 @@ export async function fetchUsers() {
   catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch users.');
+  }
+}
+
+export async function fetchUserbyId(id: string) {
+  try {
+    const rows = await sql`
+    SELECT user_id, user_first_name, user_last_name, user_email FROM public.users WHERE user_id = ${id}
+    LIMIT 1
+    `;
+
+    const row = rows && rows[0];
+    if (!row) return null;
+
+    const user : User = {
+    user_id : row.user_id,
+    user_first_name : row.user_first_name,
+    user_last_name : row.user_last_name
+  } as User
+
+    return user;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch user');
   }
 }
 
@@ -124,6 +147,41 @@ export async function fetchProductsBySellerId(id: string): Promise<Product[]> {
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch products by seller');
+  }
+}
+
+export async function fetchReviewsByProductId(id: string): Promise<Review[]> {
+  try {
+   const rows = await sql`
+  SELECT 
+    public.reviews.review_id,
+    public.reviews.review_date,
+    public.reviews.review_text,
+    public.reviews.product_id,
+    public.reviews.seller_id,
+    public.reviews.user_id,        
+    public.users.user_first_name
+  FROM public.reviews
+  JOIN public.users ON public.reviews.user_id = public.users.user_id
+  WHERE public.reviews.product_id = ${id}
+  ORDER BY public.reviews.review_date DESC
+`;
+
+    const reviews: Review[] = rows.map((row: any) => ({
+      review_id: row.review_id ?? '',
+      review_date: row.review_date ?? '',
+      review_text: row.review_text ?? '',
+      product_id: row.product_id ?? '',
+      seller_id: row.seller_id ?? '',
+      user_id: row.user_id ?? '',
+      user_first_name: row.user_first_name
+    }));
+
+    return reviews;
+    console.log(reviews);
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch reviews by product');
   }
 }
 
