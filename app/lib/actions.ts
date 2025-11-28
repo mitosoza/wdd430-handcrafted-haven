@@ -168,14 +168,16 @@ export async function updateProduct(
   }
 
   try {
-    await sql`
-      UPDATE public.products
-      SET price = ${validated.data.price},
-          product_name = ${validated.data.product_name},
-          product_description = ${validated.data.product_description},
-          seller_id = ${validated.data.seller_id}
-      WHERE product_id = ${id}
-    `;
+    const { price, product_name, product_description, seller_id } = validated.data;
+
+await sql`
+  UPDATE public.products
+  SET price = ${price},
+      product_name = ${product_name},
+      product_description = ${product_description ?? ''},
+      seller_id = ${seller_id ?? ''}
+  WHERE product_id = ${id}
+`;
 
     revalidatePath('/products');
     return { message: 'Product updated', errors: {} };
