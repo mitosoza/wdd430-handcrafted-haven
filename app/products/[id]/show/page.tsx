@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { fetchProductById, fetchSellerById, fetchProductsBySellerId } from '@/app/lib/data';
+import { fetchProductById, fetchSellerById } from '@/app/lib/data';
 import ImageWithFallback from '@/app/ui/products/image-with-fallback';
 import { formatCurrency } from '@/app/lib/utils';
 import Link from 'next/link';

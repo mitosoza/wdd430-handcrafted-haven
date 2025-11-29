@@ -1,7 +1,9 @@
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable jsx-a11y/img-redundant-alt */
 "use client";
 
 import { Product, Seller } from "@/app/lib/definitions";
-import { CurrencyDollarIcon, UserCircleIcon, PhotoIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { CurrencyDollarIcon, UserCircleIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { Button } from "@/app/ui/button";
 import { updateProduct, State } from "@/app/lib/actions";

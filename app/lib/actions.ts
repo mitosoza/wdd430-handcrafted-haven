@@ -12,6 +12,8 @@ import bcrypt from 'bcrypt';
 
 
 
+
+
 const sql = postgres(process.env.POSTGRES_URL || '', { ssl: 'require' });
 
 const FormSchema = z.object({
