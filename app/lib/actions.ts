@@ -7,6 +7,9 @@ import { signIn } from 'next-auth/react';
 import { AuthError } from 'next-auth';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
+import { unlink } from 'fs/promises';
+
+
 
 const sql = postgres(process.env.POSTGRES_URL || '', { ssl: 'require' });
 
@@ -54,7 +57,7 @@ export async function createProduct(
   if (!validated.success) {
     const fieldErrors = validated.error.format();
     const errors: State['errors'] = {};
-    // Map zod errors to our State.errors structure
+    // Map zod errors
     for (const key of Object.keys(fieldErrors)) {
       const val = (fieldErrors as any)[key];
       if (val && typeof val === 'object' && Array.isArray(val._errors)) {
@@ -142,6 +145,9 @@ export async function createProduct(
   }
 }
 
+
+
+
 export async function updateProduct(
   id: string,
   prevState: State,
@@ -152,7 +158,7 @@ export async function updateProduct(
     price: formData.get('price'),
     product_name: formData.get('product_name'),
     product_description: formData.get('product_description'),
-    seller_id: formData.get('seller_id'),
+    seller_id: formData.get('seller_id') ?? '',
   });
 
   if (!validated.success) {
@@ -167,21 +173,92 @@ export async function updateProduct(
     return { ...prevState, errors };
   }
 
+  let productImage: string | undefined;
+
+  // Handle image upload if provided
+  const imageFile = formData.get('product_image') as File | null;
+  if (imageFile && imageFile.size > 0) {
+    try {
+      const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!validTypes.includes(imageFile.type)) {
+        return {
+          ...prevState,
+          errors: { product_image: ['Only JPEG, PNG, and WebP images are allowed'] },
+        };
+      }
+
+      const maxSize = 5 * 1024 * 1024;
+      if (imageFile.size > maxSize) {
+        return {
+          ...prevState,
+          errors: { product_image: ['Image size must be less than 5MB'] },
+        };
+      }
+
+      const bytes = await imageFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+
+      const uploadDir = join(process.cwd(), 'public', 'products');
+      await mkdir(uploadDir, { recursive: true });
+
+      const timestamp = Date.now();
+      const fileExtension = imageFile.type.split('/')[1];
+      const fileName = `${id}-${timestamp}.${fileExtension}`;
+      const filePath = join(uploadDir, fileName);
+
+      await writeFile(filePath, buffer);
+      productImage = `products/${fileName}`;
+
+      //Delete old image if exists
+const oldImageResult = await sql`
+  SELECT product_image FROM public.products WHERE product_id = ${id}
+`;
+const oldImage = oldImageResult[0]?.product_image;
+if (oldImage) {
+  const oldPath = join(process.cwd(), 'public', oldImage);
+  try {
+    await unlink(oldPath);
+  } catch (err) {
+    console.warn('Failed to delete old image:', err);
+  }
+}
+    } catch (error) {
+      console.error('Image upload error:', error);
+      return {
+        ...prevState,
+        errors: { product_image: ['Failed to upload image'] },
+      };
+    }
+  }
+
   try {
     const { price, product_name, product_description, seller_id } = validated.data;
 
-await sql`
-  UPDATE public.products
-  SET price = ${price},
-      product_name = ${product_name},
-      product_description = ${product_description ?? ''},
-      seller_id = ${seller_id ?? ''}
-  WHERE product_id = ${id}
-`;
+    if (productImage) {
+      await sql`
+        UPDATE public.products
+        SET price = ${price},
+            product_name = ${product_name},
+            product_description = ${product_description ?? ''},
+            seller_id = ${seller_id ?? ''},
+            product_image = ${productImage}
+        WHERE product_id = ${id}
+      `;
+    } else {
+      await sql`
+        UPDATE public.products
+        SET price = ${price},
+            product_name = ${product_name},
+            product_description = ${product_description ?? ''},
+            seller_id = ${seller_id ?? ''}
+        WHERE product_id = ${id}
+      `;
+    }
 
     revalidatePath('/products');
-    return { message: 'Product updated', errors: {} };
+    return { message: 'Product updated successfully!', errors: {} };
   } catch (error) {
+    console.error('Database Error:', error);
     return { message: 'Database Error: Failed to update product.', errors: {} };
   }
 }
