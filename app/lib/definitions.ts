@@ -32,6 +32,7 @@ export type Review = {
   product_id: string;
   seller_id: string;
   user_id: string;
+  user_first_name: string;
 };
 
 export type Revenue = {

@@ -15,5 +15,7 @@ module.exports = {
   rules: {
     // example custom rule
     '@typescript-eslint/no-unused-vars': ['warn'],
+    '@typescript-eslint/no-explicit-any': 'off',
+
   },
 };
