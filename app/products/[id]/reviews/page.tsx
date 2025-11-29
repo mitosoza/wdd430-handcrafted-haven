@@ -1,4 +1,4 @@
-import { fetchProductsBySellerId, fetchSellerById, fetchReviewsByProductId, fetchProductById, fetchUserbyId } from "@/app/lib/data";
+import { fetchReviewsByProductId, fetchProductById } from "@/app/lib/data";
 import { notFound } from "next/navigation";
 import Link from "next/link"; import { Metadata } from "next";
 
