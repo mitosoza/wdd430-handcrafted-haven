@@ -8,6 +8,7 @@ import { AuthError } from 'next-auth';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { unlink } from 'fs/promises';
+import bcrypt from 'bcrypt';
 
 
 
@@ -23,6 +24,14 @@ const FormSchema = z.object({
   seller_id: z.string()
 });
 
+const userFormSchema = z.object({
+  user_id: z.string(),
+  user_first_name: z.string(),
+  user_last_name: z.string(),
+  user_email: z.string(),
+  user_password: z.string()
+})
+
 export type State = {
   errors?: {
     product_id?: string[];
@@ -35,11 +44,25 @@ export type State = {
   message?: string | null;
 };
 
+export type UserState = {
+  errors?: {
+    user_id?: string[];
+    user_first_name?: string[];
+    user_last_name?: string[];
+    user_email?: string[];
+    user_password?: string[]
+
+  }
+  message?: string | null;
+}
+
 
 const CreateProduct = FormSchema.omit({ product_id: true, seller_id: true }).extend({
   product_id: z.string().optional(),
   seller_id: z.string().optional(),
 });
+
+const CreateUser = userFormSchema.omit({user_id: true})
 
 export async function createProduct(
   prevState: State,
@@ -262,6 +285,58 @@ if (oldImage) {
     return { message: 'Database Error: Failed to update product.', errors: {} };
   }
 }
+
+export async function createUser(
+  prevState: UserState,
+  formData: FormData,
+): Promise<UserState> {
+  // Validate form using Zod
+  const validated = CreateUser.safeParse({
+    user_id: formData.get('user_id') || '',
+    user_first_name: formData.get('user_first_name') || '',
+    user_last_name: formData.get('user_last_name') || '',
+    user_email: formData.get('user_email') || '',
+    user_password: formData.get('user_password'),
+  });
+
+  if (!validated.success) {
+    const fieldErrors = validated.error.format();
+    const errors: UserState['errors'] = {};
+    for (const key of Object.keys(fieldErrors)) {
+      const val = (fieldErrors as any)[key];
+      if (val && typeof val === 'object' && Array.isArray(val._errors)) {
+        (errors as any)[key] = val._errors as string[];
+      }
+    }
+    return { ...prevState, errors };
+  }
+
+  // Generate user_id
+  const userId = `u${Math.random().toString(36).substring(2, 5)}`;
+
+  try {
+    // Hash the password securely
+    const hashedPassword = await bcrypt.hash(validated.data.user_password, 10);
+    
+
+    // Insert data into the database
+    await sql`
+      INSERT INTO public.users (user_id, user_first_name, user_last_name, user_email, user_password)
+      VALUES (${userId}, ${validated.data.user_first_name}, ${validated.data.user_last_name}, ${validated.data.user_email}, ${hashedPassword})
+    `;
+
+    return { message: 'User created successfully!', errors: {} };
+  } catch (error) {
+    console.log('Database Error:', error);
+    return {
+      message: 'Database Error: Failed to create user',
+      errors: {},
+    };
+  }
+}
+
+
+
 
 export async function authenticate(
   prevState: string | undefined,
