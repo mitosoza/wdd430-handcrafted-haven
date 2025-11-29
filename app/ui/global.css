@@ -16,3 +16,11 @@ input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
+.landing-page-gradient {
+  background-color: #ccfbf1;
+  background-image:
+    radial-gradient(circle at top right, #fed7aa 0%, transparent 40%),
+    radial-gradient(circle at bottom right, #bae6fd 0%, transparent 30%);
+  background-attachment: fixed;
+}

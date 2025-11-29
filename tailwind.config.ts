@@ -25,6 +25,23 @@ const config: Config = {
           transform: 'translateX(100%)',
         },
       },
+      fadeIn: {
+        from: { opacity: '0' },
+        to: { opacity: '1' },
+      },
+      slideUp: {
+        from: { opacity: '0', transform: 'translateY(20px)' },
+        to: { opacity: '1', transform: 'translateY(0)' },
+      },
+      slideInRight: {
+        from: { opacity: '0', transform: 'translateX(20px)' },
+        to: { opacity: '1', transform: 'translateX(0)' },
+      },
+    },
+    animation: {
+      fadeIn: 'fadeIn 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards',
+      slideUp: 'slideUp 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards',
+      slideInRight: 'slideInRight 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards',
     },
   },
   plugins: [require('@tailwindcss/forms')],
