@@ -22,6 +22,7 @@ export type Product = {
   product_name: string;
   seller_id: string;
   product_image: string;
+  category_id: string;
 
 };
 
@@ -34,6 +35,12 @@ export type Review = {
   user_id: string;
   user_first_name: string;
 };
+
+export type Category = {
+  category_id: string;
+  category_name: string;
+  category_image: string;
+}
 
 export type Revenue = {
   month: string;
