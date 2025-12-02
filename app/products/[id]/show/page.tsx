@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { fetchProductById, fetchSellerById } from '@/app/lib/data';
+import { fetchProductById, fetchSellerById, fetchCategoryById } from '@/app/lib/data';
 import ImageWithFallback from '@/app/ui/products/image-with-fallback';
 import { formatCurrency } from '@/app/lib/utils';
 import Link from 'next/link';
@@ -15,6 +15,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   }
 
   const seller = product.seller_id ? await fetchSellerById(product.seller_id) : null;
+  const category = product.category_id ? await
+  fetchCategoryById(product.category_id) : null;
 
   // Resolve product image so the client receives an absolute public path.
   const resolveImage = (imgCandidateRaw?: string) => {
@@ -85,6 +87,24 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             ) : (
               <div className="mt-6 text-sm text-gray-500">Seller ID: {product.seller_id}</div>
             )}
+            {category ? 
+              (
+              <Link className="text-sm text-gray-600 underline" href={`/products/${category.category_id}/categories`}>
+              <div className="mt-6 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100">
+                  
+                  <ImageWithFallback src={resolveImage(category.category_image)} alt={category.category_name} className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium">{category.category_name}</div>
+                  
+                </div>
+              </div>
+              </Link>
+            ) : ((
+              <div className="mt-6 text-sm text-gray-500">Category ID: {product.category_id}</div>
+            ))
+            }
           </div>
         </div>
       </div>
