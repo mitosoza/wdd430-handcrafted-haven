@@ -5,17 +5,21 @@ import {
 
 const sql = postgres(process.env.POSTGRES_URL || '', { ssl: 'require' });
 
-export async function fetchProducts() {
-  try {
-    const data = await sql<Product[]>`
-    SELECT product_id, price, product_image, product_description, seller_id, product_name FROM public.products ORDER BY product_name DESC  `;
-    console.log(data);
-    return data;
+export async function fetchProducts(search?: string) {
+  if (search) {
+    return await sql`
+      SELECT product_id, product_name, product_description, price, product_image
+      FROM public.products
+      WHERE product_name ILIKE ${'%' + search + '%'}
+      ORDER BY product_name ASC
+    `;
   }
-  catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch products.');
-  }
+
+  return await sql`
+    SELECT product_id, product_name, product_description, price, product_image
+    FROM public.products
+    ORDER BY product_name ASC
+  `;
 }
 
 export async function fetchSellers() {
