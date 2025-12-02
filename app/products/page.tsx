@@ -4,13 +4,37 @@ import { formatCurrency } from '@/app/lib/utils';
 import ImageWithFallback from '@/app/ui/products/image-with-fallback';
 import fs from 'fs';
 import path from 'path';
+//import ProductSearch from '@/app/ui/products/ProductSearch';
 
-export default async function Page() {
-  const products = (await fetchProducts()) ?? [];
+export default async function Page({ searchParams }: { searchParams?: { q?: string } }) {
+  const q = searchParams?.q ?? '';
+  const products = (await fetchProducts(q)) ?? [];
+
   fetchSellers();
   return (
     <main suppressHydrationWarning={true} className="p-6">
       <h1 className="mb-6 text-2xl font-semibold">Products</h1>
+
+      {/* Search form */}
+      <form className="mb-6">
+        <input
+          type="text"
+          name="q"
+          defaultValue={q}
+          placeholder="Search products..."
+          className="w-full rounded-md border border-gray-300 px-4 py-2 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+        />
+      </form>
+
+       {/* Show "Back to all products" link only if searching */}
+      {q && (
+        <div className="mb-6">
+          <Link href="/products" className="text-sm text-gray-600 underline">
+            ← Show all products
+          </Link>
+        </div>
+      )}
+
 
       {products.length === 0 ? (
         <div className="text-gray-600">No products found.</div>
