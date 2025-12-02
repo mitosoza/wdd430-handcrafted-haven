@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 import {
-  Product, Seller, User, Review
+  Product, Seller, User, Review, Category
 } from './definitions';
 
 const sql = postgres(process.env.POSTGRES_URL || '', { ssl: 'require' });
@@ -99,7 +99,7 @@ export async function fetchSellerById(id: string) {
 export async function fetchProductById(id: string) {
   try {
     const rows = await sql`
-      SELECT product_id, price, product_image, product_description, seller_id, product_name
+      SELECT product_id, price, product_image, product_description, seller_id, product_name, category_id
       FROM public.products
       WHERE product_id = ${id}
       LIMIT 1
@@ -116,6 +116,7 @@ export async function fetchProductById(id: string) {
       product_name: row.product_name ?? '',
       seller_id: row.seller_id ?? '',
       product_image: row.product_image ?? '',
+      category_id: row.category_id ?? '',
     };
 
     return product;
@@ -128,7 +129,7 @@ export async function fetchProductById(id: string) {
 export async function fetchProductsBySellerId(id: string): Promise<Product[]> {
   try {
     const rows = await sql`
-      SELECT product_id, price, product_image, product_description, seller_id, product_name
+      SELECT product_id, price, product_image, product_description, seller_id, product_name, category_id
       FROM public.products
       WHERE seller_id = ${id}
     `;
@@ -141,12 +142,64 @@ export async function fetchProductsBySellerId(id: string): Promise<Product[]> {
       product_name: row.product_name ?? '',
       seller_id: row.seller_id ?? '',
       product_image: row.product_image ?? '',
+      category_id: row.category_id ?? '',
     }));
 
     return products;
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch products by seller');
+  }
+}
+
+export async function fetchCategoryById(id: string): Promise<Category> {
+  try {
+    const rows = await sql`
+      SELECT category_id, category_name, category_image
+      FROM public.categories
+      WHERE category_id = ${id}
+      LIMIT 1
+    `;
+
+    const row = rows[0]; 
+
+    const category: Category = {
+      category_id: row?.category_id ?? '',
+      category_name: row?.category_name ?? '',
+      category_image: row?.category_image ?? ''
+    };
+    console.log(category);
+    return category;
+    
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch category by id');
+  }
+}
+
+export async function fetchProductsByCategoryId(id: string): Promise<Product[]> {
+  try {
+    const rows = await sql`
+      SELECT product_id, price, product_image, product_description, seller_id, product_name, category_id
+      FROM public.products
+      WHERE category_id = ${id}
+    `;
+
+    // Map all rows to Product shape
+    const products: Product[] = rows.map((row: any) => ({
+      id: row.product_id ?? '',
+      product_description: row.product_description ?? '',
+      price: row.price ?? '0',
+      product_name: row.product_name ?? '',
+      seller_id: row.seller_id ?? '',
+      product_image: row.product_image ?? '',
+      category_id: row.category_id ?? '',
+    }));
+
+    return products;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch products by category');
   }
 }
 
