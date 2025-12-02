@@ -83,6 +83,7 @@ export default function Page() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           {/* Card 1 */}
+          <Link href={`/products/c001/categories`}>
           <AnimateOnScroll animation="animate-slideUp" delay="delay-100" className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="h-48 mb-6 overflow-hidden rounded-t-xl">
               <Image
@@ -96,8 +97,10 @@ export default function Page() {
             <h3 className="font-bold text-gray-900 mb-2 uppercase tracking-wide">HOME & LIVING</h3>
             <p className="text-sm text-gray-600">Warm, personal touches for the spaces that matter most.</p>
           </AnimateOnScroll>
+          </Link>
 
           {/* Card 2 */}
+          <Link href={`/products/c002/categories`}>
           <AnimateOnScroll animation="animate-slideUp" delay="delay-200" className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="h-48 mb-6 overflow-hidden rounded-t-xl">
               <Image
@@ -111,8 +114,10 @@ export default function Page() {
             <h3 className="font-bold text-gray-900 mb-2 uppercase tracking-wide">JEWELRY & ACCESSORIES</h3>
             <p className="text-sm text-gray-600">Every piece tells a story crafted with care, made to last.</p>
           </AnimateOnScroll>
+          </Link>
 
           {/* Card 3 */}
+          <Link href={`/products/c003/categories`}>
           <AnimateOnScroll animation="animate-slideUp" delay="delay-300" className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="h-48 mb-6 overflow-hidden rounded-t-xl">
               <Image
@@ -126,6 +131,7 @@ export default function Page() {
             <h3 className="font-bold text-gray-900 mb-2 uppercase tracking-wide">MISCELLANEOUS ITEMS</h3>
             <p className="text-sm text-gray-600">Transform your walls and spaces with creations that inspire.</p>
           </AnimateOnScroll>
+          </Link>
         </div>
 
         <Link
