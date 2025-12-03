@@ -1,18 +1,21 @@
-import HavenLogo from '@/app/ui/haven-logo';
 import { lusitana } from '@/app/ui/fonts';
 import Image from 'next/image';
 import Link from 'next/link';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import AnimateOnScroll from '@/app/ui/animate-on-scroll';
+import Header from '@/app/ui/header';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Handcrafted Haven',
+};
 
 export default function Page() {
   return (
     <main className="min-h-screen landing-page-gradient">
       {/* Hero Section */}
       <div className="container mx-auto px-6 py-8">
-        <header className="mb-12">
-          <HavenLogo className="text-gray-900" />
-        </header>
+        <Header />
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-12">
           <AnimateOnScroll animation="animate-slideUp" className="md:w-1/2 space-y-6">

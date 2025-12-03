@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import postgres from 'postgres';
-import { signIn } from 'next-auth/react';
+import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
@@ -235,18 +235,18 @@ export async function updateProduct(
       productImage = `products/${fileName}`;
 
       //Delete old image if exists
-const oldImageResult = await sql`
+      const oldImageResult = await sql`
   SELECT product_image FROM public.products WHERE product_id = ${id}
 `;
-const oldImage = oldImageResult[0]?.product_image;
-if (oldImage) {
-  const oldPath = join(process.cwd(), 'public', oldImage);
-  try {
-    await unlink(oldPath);
-  } catch (err) {
-    console.warn('Failed to delete old image:', err);
-  }
-}
+      const oldImage = oldImageResult[0]?.product_image;
+      if (oldImage) {
+        const oldPath = join(process.cwd(), 'public', oldImage);
+        try {
+          await unlink(oldPath);
+        } catch (err) {
+          console.warn('Failed to delete old image:', err);
+        }
+      }
     } catch (error) {
       console.error('Image upload error:', error);
       return {
@@ -319,7 +319,7 @@ export async function createUser(
   try {
     // Hash the password securely
     const hashedPassword = await bcrypt.hash(validated.data.user_password, 10);
-    
+
 
     // Insert data into the database
     await sql`

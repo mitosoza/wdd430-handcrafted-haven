@@ -3,13 +3,14 @@ export type User = {
   user_id: string;
   user_first_name: string;
   user_last_name: string;
-  email: string;
-  password: string;
+  user_email: string;
+  user_password: string;
 };
 
 export type Seller = {
   seller_id: string;
   seller_first_name: string;
+  seller_last_name: string;
   seller_email: string;
   seller_image: string;
   seller_password: string;

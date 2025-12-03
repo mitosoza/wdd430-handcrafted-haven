@@ -1,28 +1,57 @@
 "use client";
 
 import {
-  UserGroupIcon,
-  HomeIcon,
+  UserIcon,
+  ArchiveBoxIcon,
   DocumentDuplicateIcon,
+  ShoppingBagIcon,
+  Squares2X2Icon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
 
-// Map of links to display in the side navigation.
-// Depending on the size of the application, this would be stored in a database.
-const links = [
-  { name: 'Home', href: '/dashboard', icon: HomeIcon },
+const baseLinks = [
+  {
+    name: 'Account',
+    href: '/dashboard/account',
+    icon: UserIcon
+  },
+  {
+    name: 'Orders',
+    href: '/dashboard/orders',
+    icon: ArchiveBoxIcon
+  },
+  {
+    name: 'Shop',
+    href: '/products',
+    icon: ShoppingBagIcon
+  },
+];
+
+const sellerLinks = [
+  {
+    name: 'My Products',
+    href: '/dashboard/inventory',
+    icon: Squares2X2Icon,
+  },
   {
     name: 'Invoices',
     href: '/dashboard/invoices',
     icon: DocumentDuplicateIcon,
   },
-  { name: 'Customers', href: '/dashboard/customers', icon: UserGroupIcon },
 ];
 
-export default function NavLinks() {
+interface NavLinksProps {
+  userRole?: 'user' | 'seller';
+}
+
+export default function NavLinks({ userRole }: NavLinksProps) {
   const pathname = usePathname();
+
+  const links = userRole === 'seller'
+    ? [...baseLinks, ...sellerLinks]
+    : baseLinks;
   return (
     <>
       {links.map((link) => {

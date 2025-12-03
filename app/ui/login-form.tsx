@@ -14,7 +14,7 @@ import { useSearchParams } from 'next/navigation';
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  const callbackUrl = searchParams.get('callbackUrl') || '/products';
   const [errorMessage, formAction, isPending] = useActionState(
     authenticate,
     undefined,
@@ -22,9 +22,9 @@ export default function LoginForm() {
 
   return (
     <form action={formAction} className="space-y-3">
-      <div className="flex-1 rounded-lg bg-gray-50 px-6 pb-4 pt-8">
-        <h1 className={`${lusitana.className} mb-3 text-2xl`}>
-          Please log in to continue.
+      <div className="flex-1 rounded-lg bg-gray-50 px-6 pb-4 pt-8  ring-gray-300 shadow-[0_0_15px_rgba(0,0,0,0.1)]">
+        <h1 className={`${lusitana.className} mb-3 text-2xl text-center font-bold`}>
+          Welcome
         </h1>
         <div className="w-full">
           <div>
