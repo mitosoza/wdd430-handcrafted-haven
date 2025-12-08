@@ -43,6 +43,41 @@ export type Category = {
   category_image: string;
 }
 
+export type Order = {
+  order_id: string;
+  user_id: string;
+  order_date: string;
+  order_status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  total_amount: string;
+  shipping_address: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type OrderItem = {
+  order_item_id: string;
+  order_id: string;
+  product_id: string;
+  seller_id: string;
+  quantity: number;
+  unit_price: string;
+  total_price: string;
+}
+
+export type Address = {
+  address_id: string;
+  user_id: string;
+  is_default: boolean;
+  street_address_1: string;
+  street_address_2: string;
+  city: string;
+  state_province: string;
+  postal_code: string;
+  country: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export type Revenue = {
   month: string;
   revenue: number;

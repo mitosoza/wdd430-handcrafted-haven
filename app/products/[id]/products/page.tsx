@@ -6,6 +6,7 @@ import Link from 'next/link';
 import fs from 'fs';
 import path from 'path';
 import Header from '@/app/ui/header';
+import { lusitana } from '@/app/ui/fonts';
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -51,9 +52,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   };
 
   return (
-    <>
+    <main className="min-h-screen landing-page-gradient">
       <Header />
-      <main className="p-6">
+      <div className="p-6">
         {/* Seller header */}
         <div className="mb-8 flex items-center gap-4">
           <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
@@ -71,7 +72,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
         {/* Products grid */}
         <div>
-          <h2 className="mb-6 text-2xl font-semibold">Products</h2>
+          <h2 className={`${lusitana.className} text-3xl text-gray-900 mb-16`}>Products</h2>
 
           {products.length === 0 ? (
             <div className="text-gray-600">No products found from this seller.</div>
@@ -93,7 +94,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 const bg = bgClasses[idx % bgClasses.length];
 
                 return (
-                  <article key={id} className="relative overflow-hidden rounded-xl bg-white shadow-lg">
+                  <article key={id} className="relative pt-10 overflow-hidden rounded-xl bg-white shadow-lg">
                     {/* diagonal background */}
                     <div className={`absolute inset-0 -z-10 transform -rotate-6 bg-gradient-to-br ${bg} opacity-90`}></div>
 
@@ -116,9 +117,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                       </div>
 
                       <div className="mt-6 flex items-center justify-center gap-4">
-                        <button className="rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow hover:bg-blue-500">Add to cart</button>
-                        <Link href={`/products/${id}/show`} className="text-sm font-medium text-gray-700 underline">
-                          View
+                        <Link href={`/products/${id}/show`} className="rounded-full bg-cyan-200/50 px-8 py-3 text-gray-900 font-semibold hover:bg-cyan-200 transition-colors">
+                          Shop now
                         </Link>
                       </div>
                     </div>
@@ -134,7 +134,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             ← Back to all products
           </Link>
         </div>
-      </main>
-    </>
+      </div>
+    </main>
   );
 }

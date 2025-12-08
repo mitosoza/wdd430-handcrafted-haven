@@ -4,7 +4,7 @@ import {
   UserIcon,
   ArchiveBoxIcon,
   DocumentDuplicateIcon,
-  ShoppingBagIcon,
+  MapPinIcon,
   Squares2X2Icon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
@@ -18,14 +18,14 @@ const baseLinks = [
     icon: UserIcon
   },
   {
-    name: 'Orders',
+    name: 'My Orders',
     href: '/dashboard/orders',
     icon: ArchiveBoxIcon
   },
   {
-    name: 'Shop',
-    href: '/products',
-    icon: ShoppingBagIcon
+    name: 'My Addresses',
+    href: '/dashboard/addresses',
+    icon: MapPinIcon
   },
 ];
 

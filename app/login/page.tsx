@@ -11,15 +11,15 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <>
+    <main className="flex flex-col min-h-screen landing-page-gradient">
       <Header />
-      <main className="flex items-center justify-center md:h-screen">
+      <div className="flex-1 flex items-center justify-center">
         <div className="relative mx-auto flex w-full max-w-[400px] flex-col space-y-2.5 p-4 md:-mt-32">
           <Suspense>
             <LoginForm />
           </Suspense>
         </div>
-      </main>
-    </>
+      </div>
+    </main>
   );
 }

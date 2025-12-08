@@ -10,7 +10,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
     redirect('/login');
   }
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-screen flex-col landing-page-gradient">
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <div className="w-full flex-none md:w-64 h-full">

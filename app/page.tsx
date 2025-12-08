@@ -86,48 +86,54 @@ export default function Page() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           {/* Card 1 */}
-          <AnimateOnScroll animation="animate-slideUp" delay="delay-100" className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="h-48 mb-6 overflow-hidden rounded-t-xl">
-              <Image
-                src="/img1.jpg"
-                width={400}
-                height={300}
-                alt="Home and Living"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <h3 className="font-bold text-gray-900 mb-2 uppercase tracking-wide">HOME & LIVING</h3>
-            <p className="text-sm text-gray-600">Warm, personal touches for the spaces that matter most.</p>
+          <AnimateOnScroll animation="animate-slideUp" delay="delay-100">
+            <Link href="/products/c001/categories" className="block bg-white rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+              <div className="h-48 mb-6 overflow-hidden rounded-t-xl">
+                <Image
+                  src="/img1.jpg"
+                  width={400}
+                  height={300}
+                  alt="Home and Living"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="font-bold text-gray-900 mb-2 uppercase tracking-wide">HOME & LIVING</h3>
+              <p className="text-sm text-gray-600">Warm, personal touches for the spaces that matter most.</p>
+            </Link>
           </AnimateOnScroll>
 
           {/* Card 2 */}
-          <AnimateOnScroll animation="animate-slideUp" delay="delay-200" className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="h-48 mb-6 overflow-hidden rounded-t-xl">
-              <Image
-                src="/img2.jpg"
-                width={400}
-                height={300}
-                alt="Jewelry and Accessories"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <h3 className="font-bold text-gray-900 mb-2 uppercase tracking-wide">JEWELRY & ACCESSORIES</h3>
-            <p className="text-sm text-gray-600">Every piece tells a story crafted with care, made to last.</p>
+          <AnimateOnScroll animation="animate-slideUp" delay="delay-200">
+            <Link href="/products/c002/categories" className="block bg-white rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+              <div className="h-48 mb-6 overflow-hidden rounded-t-xl">
+                <Image
+                  src="/img2.jpg"
+                  width={400}
+                  height={300}
+                  alt="Jewelry and Accessories"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="font-bold text-gray-900 mb-2 uppercase tracking-wide">JEWELRY & ACCESSORIES</h3>
+              <p className="text-sm text-gray-600">Every piece tells a story crafted with care, made to last.</p>
+            </Link>
           </AnimateOnScroll>
 
           {/* Card 3 */}
-          <AnimateOnScroll animation="animate-slideUp" delay="delay-300" className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="h-48 mb-6 overflow-hidden rounded-t-xl">
-              <Image
-                src="/img3.jpg"
-                width={400}
-                height={300}
-                alt="Miscellaneous Items"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <h3 className="font-bold text-gray-900 mb-2 uppercase tracking-wide">MISCELLANEOUS ITEMS</h3>
-            <p className="text-sm text-gray-600">Transform your walls and spaces with creations that inspire.</p>
+          <AnimateOnScroll animation="animate-slideUp" delay="delay-300">
+            <Link href="/products/c003/categories" className="block bg-white rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+              <div className="h-48 mb-6 overflow-hidden rounded-t-xl">
+                <Image
+                  src="/img3.jpg"
+                  width={400}
+                  height={300}
+                  alt="Miscellaneous Items"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="font-bold text-gray-900 mb-2 uppercase tracking-wide">MISCELLANEOUS ITEMS</h3>
+              <p className="text-sm text-gray-600">Transform your walls and spaces with creations that inspire.</p>
+            </Link>
           </AnimateOnScroll>
         </div>
 

@@ -5,6 +5,7 @@ import ImageWithFallback from '@/app/ui/products/image-with-fallback';
 import fs from 'fs';
 import path from 'path';
 import Header from '@/app/ui/header';
+import { lusitana } from '@/app/ui/fonts';
 
 type ProductSearchParams = { q?: string };
 
@@ -51,10 +52,10 @@ export default async function Page({
   };
 
   return (
-    <>
+    <main className="min-h-screen landing-page-gradient">
       <Header />
-      <main className="p-6">
-        <h1 className="mb-6 text-2xl font-semibold">Products</h1>
+      <div className="p-6">
+        <h1 className={`${lusitana.className} text-4xl text-gray-900 mb-16`}>Products</h1>
 
         {/* Search form */}
         <form className="mb-6">
@@ -99,7 +100,7 @@ export default async function Page({
               return (
                 <article
                   key={id}
-                  className="relative overflow-hidden rounded-xl bg-white shadow-lg"
+                  className="relative pt-10 overflow-hidden rounded-xl bg-white shadow-lg"
                 >
                   {/* diagonal background */}
                   <div
@@ -115,7 +116,7 @@ export default async function Page({
 
                   <div className="p-6 pt-16">
                     {/* product image */}
-                    <div className="-mt-20 flex justify-center">
+                    <div className="-mt-16 flex justify-center">
                       <div className="w-40 h-40 rounded-lg bg-white p-2 shadow-md flex items-center justify-center">
                         <ImageWithFallback
                           src={image}
@@ -133,14 +134,11 @@ export default async function Page({
                     </div>
 
                     <div className="mt-6 flex items-center justify-center gap-4">
-                      <button className="rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow hover:bg-blue-500">
-                        Add to cart
-                      </button>
                       <Link
                         href={`/products/${id}/show`}
-                        className="text-sm font-medium text-gray-700 underline"
+                        className="rounded-full bg-cyan-200/50 px-8 py-3 text-gray-900 font-semibold hover:bg-cyan-200 transition-colors"
                       >
-                        View
+                        Shop now
                       </Link>
                     </div>
                   </div>
@@ -149,7 +147,7 @@ export default async function Page({
             })}
           </div>
         )}
-      </main>
-    </>
+      </div>
+    </main>
   );
 }

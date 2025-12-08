@@ -52,10 +52,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const productImage = resolveImage(product.product_image);
 
   return (
-    <>
+    <main className="min-h-screen landing-page-gradient">
       <Header />
-      <main className="p-6">
-        <div className="max-w-4xl mx-auto rounded-xl bg-white p-6 shadow-md">
+      <div className="p-6">
+        <div className="max-w-5xl mx-auto rounded-xl bg-white p-6 shadow-md">
           <div className="flex flex-col md:flex-row gap-6">
             <div className="md:w-1/2 flex items-center justify-center">
               <div className="w-64 h-64 rounded-lg bg-gray-50 p-4 shadow-sm flex items-center justify-center">
@@ -69,7 +69,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
               <div className="mt-6 flex items-center gap-4">
                 <span className="rounded-full bg-gray-100 px-4 py-2 text-lg font-semibold">{formatCurrency(Number(product.price))}</span>
-                <button className="rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow hover:bg-blue-500">Add to cart</button>
+                <button className="rounded-full bg-cyan-200/50 px-8 py-3 text-gray-900 font-semibold hover:bg-cyan-200 transition-colors">Add to cart</button>
                 <Link href="/products" className="text-sm text-gray-600 underline">Back to products</Link>
                 <Link className="text-sm text-gray-600 underline" href={`/products/${id}/reviews`}>Reviews</Link>
               </div>
@@ -111,7 +111,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             </div>
           </div>
         </div>
-      </main>
-    </>
+      </div>
+    </main>
   );
 }

@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 import {
-  Product, Seller, User, Review, Category
+  Product, Seller, User, Review, Category, Address
 } from './definitions';
 
 const sql = postgres(process.env.POSTGRES_URL || '', { ssl: 'require' });
@@ -48,6 +48,33 @@ export async function fetchUsers() {
   }
 }
 
+export async function fetchCategories() {
+  try {
+    const data = await sql<Category[]>`
+    SELECT category_id, category_name, category_image FROM public.categories ORDER BY category_name ASC  `;
+    return data;
+  }
+  catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch categories.');
+  }
+}
+
+export async function fetchSellersWithProducts() {
+  try {
+    const data = await sql<Seller[]>`
+    SELECT DISTINCT s.seller_id, s.seller_first_name, s.seller_last_name, s.seller_email, s.seller_image
+    FROM public.sellers s
+    INNER JOIN public.products p ON s.seller_id = p.seller_id
+    ORDER BY s.seller_first_name ASC  `;
+    return data;
+  }
+  catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch sellers with products.');
+  }
+}
+
 export async function fetchUserbyId(id: string) {
   try {
     const rows = await sql`
@@ -58,11 +85,11 @@ export async function fetchUserbyId(id: string) {
     const row = rows && rows[0];
     if (!row) return null;
 
-    const user : User = {
-    user_id : row.user_id,
-    user_first_name : row.user_first_name,
-    user_last_name : row.user_last_name
-  } as User
+    const user: User = {
+      user_id: row.user_id,
+      user_first_name: row.user_first_name,
+      user_last_name: row.user_last_name
+    } as User
 
     return user;
   } catch (error) {
@@ -91,7 +118,7 @@ export async function fetchSellerById(id: string) {
       seller_password: row.seller_password ?? '',
     } as Seller;
 
-    
+
 
     return seller;
   } catch (error) {
@@ -165,7 +192,7 @@ export async function fetchCategoryById(id: string): Promise<Category> {
       LIMIT 1
     `;
 
-    const row = rows[0]; 
+    const row = rows[0];
 
     const category: Category = {
       category_id: row?.category_id ?? '',
@@ -174,7 +201,7 @@ export async function fetchCategoryById(id: string): Promise<Category> {
     };
     console.log(category);
     return category;
-    
+
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch category by id');
@@ -209,7 +236,7 @@ export async function fetchProductsByCategoryId(id: string): Promise<Product[]> 
 
 export async function fetchReviewsByProductId(id: string): Promise<Review[]> {
   try {
-   const rows = await sql`
+    const rows = await sql`
   SELECT 
     public.reviews.review_id,
     public.reviews.review_date,
@@ -242,3 +269,79 @@ export async function fetchReviewsByProductId(id: string): Promise<Review[]> {
   }
 }
 
+export async function fetchUserAddresses(userEmail: string): Promise<Address[]> {
+  try {
+    // First get the user_id from the email
+    const userResult = await sql`
+      SELECT user_id FROM public.users WHERE user_email = ${userEmail}
+    `;
+
+    if (userResult.length === 0) {
+      return [];
+    }
+
+    const userId = userResult[0].user_id;
+
+    // Fetch addresses for this user
+    const addresses = await sql<Address[]>`
+      SELECT 
+        address_id,
+        user_id,
+        street_address_1,
+        street_address_2,
+        city,
+        state_province,
+        postal_code,
+        country,
+        is_default,
+        created_at,
+        updated_at
+      FROM public.addresses 
+      WHERE user_id = ${userId}
+      ORDER BY is_default DESC, created_at DESC
+    `;
+
+    return addresses;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch user addresses');
+  }
+}
+
+export async function fetchAddressById(addressId: string, userEmail: string): Promise<Address | null> {
+  try {
+    // First get the user_id from the email
+    const userResult = await sql`
+      SELECT user_id FROM public.users WHERE user_email = ${userEmail}
+    `;
+
+    if (userResult.length === 0) {
+      return null;
+    }
+
+    const userId = userResult[0].user_id;
+
+    // Fetch the specific address for this user
+    const addresses = await sql<Address[]>`
+      SELECT 
+        address_id,
+        user_id,
+        street_address_1,
+        street_address_2,
+        city,
+        state_province,
+        postal_code,
+        country,
+        is_default,
+        created_at,
+        updated_at
+      FROM public.addresses 
+      WHERE address_id = ${addressId} AND user_id = ${userId}
+    `;
+
+    return addresses.length > 0 ? addresses[0] : null;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch address');
+  }
+}

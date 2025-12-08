@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import { createUser, UserState } from '@/app/lib/actions';
 import { Button } from '@/app/ui/button';
 import Link from 'next/link';
+import { lusitana } from '@/app/ui/fonts';
 
 export default function UserForm() {
   const initialState: UserState = { message: null, errors: {} };
@@ -17,7 +18,7 @@ export default function UserForm() {
     <form
       action={formAction}
       encType="multipart/form-data"
-      className="rounded-lg bg-white p-6 shadow"
+      className="rounded-lg bg-gray-50 px-6 pb-4 pt-8  ring-gray-300 shadow-[0_0_15px_rgba(0,0,0,0.1)]"
     >
       {state?.message && (
         <div className="mb-6 rounded-lg bg-green-50 p-4 text-green-800 border border-green-200">
@@ -25,7 +26,9 @@ export default function UserForm() {
         </div>
       )}
 
-      {/* First Name */}
+      <h1 className={`${lusitana.className} mb-3 text-2xl text-center font-bold`}>
+        Sign up
+      </h1>
       <div className="mb-4">
         <label
           htmlFor="user_first_name"
@@ -38,6 +41,7 @@ export default function UserForm() {
           name="user_first_name"
           type="text"
           placeholder="e.g., John"
+          defaultValue={state?.fieldValues?.user_first_name || ''}
           required
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
         />
@@ -61,6 +65,7 @@ export default function UserForm() {
           name="user_last_name"
           type="text"
           placeholder="e.g., Doe"
+          defaultValue={state?.fieldValues?.user_last_name || ''}
           required
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
         />
@@ -84,6 +89,7 @@ export default function UserForm() {
           name="user_email"
           type="email"
           placeholder="e.g., john.doe@example.com"
+          defaultValue={state?.fieldValues?.user_email || ''}
           required
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
         />
@@ -95,7 +101,7 @@ export default function UserForm() {
       </div>
 
       {/* Password */}
-      <div className="mb-6">
+      <div className="mb-4">
         <label
           htmlFor="user_password"
           className="mb-2 block text-sm font-semibold text-gray-900"
@@ -115,6 +121,24 @@ export default function UserForm() {
             {state.errors.user_password.join(', ')}
           </p>
         )}
+      </div>
+
+      {/* Create Seller Account Checkbox */}
+      <div className="mb-6">
+        <div className="flex items-center">
+          <input
+            id="create_seller_account"
+            name="create_seller_account"
+            type="checkbox"
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label
+            htmlFor="create_seller_account"
+            className="ml-2 block text-sm text-gray-900"
+          >
+            Create seller account (allows you to sell products)
+          </label>
+        </div>
       </div>
 
       {/* Form Actions */}

@@ -34,6 +34,18 @@ const userFormSchema = z.object({
   user_password: z.string()
 })
 
+const addressFormSchema = z.object({
+  address_id: z.string(),
+  user_id: z.string(),
+  street_address_1: z.string().min(1, 'Address line 1 is required'),
+  street_address_2: z.string().optional(),
+  city: z.string().min(1, 'City is required'),
+  state_province: z.string().min(1, 'State/Province is required'),
+  postal_code: z.string().min(1, 'Postal code is required'),
+  country: z.string().min(1, 'Country is required'),
+  is_default: z.boolean().optional()
+})
+
 export type State = {
   errors?: {
     product_id?: string[];
@@ -53,18 +65,44 @@ export type UserState = {
     user_last_name?: string[];
     user_email?: string[];
     user_password?: string[]
-
-  }
+  };
   message?: string | null;
+  fieldValues?: {
+    user_first_name?: string;
+    user_last_name?: string;
+    user_email?: string;
+  };
 }
 
+export type AddressState = {
+  errors?: {
+    street_address_1?: string[];
+    street_address_2?: string[];
+    city?: string[];
+    state_province?: string[];
+    postal_code?: string[];
+    country?: string[];
+    is_default?: string[];
+  };
+  message?: string | null;
+  fieldValues?: {
+    street_address_1?: string;
+    street_address_2?: string;
+    city?: string;
+    state_province?: string;
+    postal_code?: string;
+    country?: string;
+  };
+}
 
 const CreateProduct = FormSchema.omit({ product_id: true, seller_id: true }).extend({
   product_id: z.string().optional(),
   seller_id: z.string().optional(),
 });
 
-const CreateUser = userFormSchema.omit({user_id: true})
+const CreateUser = userFormSchema.omit({ user_id: true })
+
+const CreateAddress = addressFormSchema.omit({ address_id: true, user_id: true })
 
 export async function createProduct(
   prevState: State,
@@ -310,24 +348,63 @@ export async function createUser(
         (errors as any)[key] = val._errors as string[];
       }
     }
-    return { ...prevState, errors };
+    return {
+      ...prevState,
+      errors,
+      fieldValues: {
+        user_first_name: formData.get('user_first_name') as string || '',
+        user_last_name: formData.get('user_last_name') as string || '',
+        user_email: formData.get('user_email') as string || '',
+      }
+    };
   }
 
   // Generate user_id
   const userId = `u${Math.random().toString(36).substring(2, 5)}`;
 
+  // Check if creating seller account
+  const createSellerAccount = formData.get('create_seller_account') === 'on';
+
   try {
+    // Check if email already exists in both users and sellers tables
+    const [existingUser, existingSeller] = await Promise.all([
+      sql`SELECT user_email FROM public.users WHERE user_email = ${validated.data.user_email}`,
+      sql`SELECT seller_email FROM public.sellers WHERE seller_email = ${validated.data.user_email}`
+    ]);
+
+    if (existingUser.length > 0 || existingSeller.length > 0) {
+      return {
+        message: null,
+        errors: {
+          user_email: ['Email already exists. Please use a different email address.']
+        },
+        fieldValues: {
+          user_first_name: validated.data.user_first_name,
+          user_last_name: validated.data.user_last_name,
+          user_email: validated.data.user_email,
+        }
+      };
+    }
+
     // Hash the password securely
     const hashedPassword = await bcrypt.hash(validated.data.user_password, 10);
 
-
-    // Insert data into the database
-    await sql`
-      INSERT INTO public.users (user_id, user_first_name, user_last_name, user_email, user_password)
-      VALUES (${userId}, ${validated.data.user_first_name}, ${validated.data.user_last_name}, ${validated.data.user_email}, ${hashedPassword})
-    `;
-
-    return { message: 'User created successfully!', errors: {} };
+    if (createSellerAccount) {
+      // Generate seller_id and insert into sellers table
+      const sellerId = `s${Math.random().toString(36).substring(2, 5)}`;
+      await sql`
+        INSERT INTO public.sellers (seller_id, seller_first_name, seller_last_name, seller_email, seller_password, seller_image)
+        VALUES (${sellerId}, ${validated.data.user_first_name}, ${validated.data.user_last_name}, ${validated.data.user_email}, ${hashedPassword}, '/sellers/default-avatar.png')
+      `;
+      return { message: 'Seller account created successfully!', errors: {} };
+    } else {
+      // Insert into users table
+      await sql`
+        INSERT INTO public.users (user_id, user_first_name, user_last_name, user_email, user_password)
+        VALUES (${userId}, ${validated.data.user_first_name}, ${validated.data.user_last_name}, ${validated.data.user_email}, ${hashedPassword})
+      `;
+      return { message: 'User account created successfully!', errors: {} };
+    }
   } catch (error) {
     console.log('Database Error:', error);
     return {
@@ -337,8 +414,271 @@ export async function createUser(
   }
 }
 
+export async function createAddress(
+  prevState: AddressState,
+  formData: FormData,
+): Promise<AddressState> {
+  // Get current user session
+  const { auth } = await import('@/auth');
+  const session = await auth();
 
+  if (!session?.user?.email) {
+    return {
+      message: 'You must be logged in to create an address',
+      errors: {},
+    };
+  }
 
+  // Validate form using Zod
+  const validated = CreateAddress.safeParse({
+    street_address_1: formData.get('address_line_1') || '',
+    street_address_2: formData.get('address_line_2') || '',
+    city: formData.get('city') || '',
+    state_province: formData.get('state_province') || '',
+    postal_code: formData.get('postal_code') || '',
+    country: formData.get('country') || '',
+    is_default: formData.get('is_default') === 'on',
+  });
+
+  if (!validated.success) {
+    const fieldErrors = validated.error.format();
+    const errors: AddressState['errors'] = {};
+    for (const key of Object.keys(fieldErrors)) {
+      const val = (fieldErrors as any)[key];
+      if (val && typeof val === 'object' && Array.isArray(val._errors)) {
+        (errors as any)[key] = val._errors as string[];
+      }
+    }
+    return {
+      ...prevState,
+      errors,
+      fieldValues: {
+        street_address_1: formData.get('address_line_1') as string || '',
+        street_address_2: formData.get('address_line_2') as string || '',
+        city: formData.get('city') as string || '',
+        state_province: formData.get('state_province') as string || '',
+        postal_code: formData.get('postal_code') as string || '',
+        country: formData.get('country') as string || '',
+      }
+    };
+  }
+
+  try {
+    // Get the user's ID from their email
+    const userResult = await sql`
+      SELECT user_id FROM public.users WHERE user_email = ${session.user.email}
+    `;
+
+    if (userResult.length === 0) {
+      return {
+        message: 'User not found',
+        errors: {},
+      };
+    }
+
+    const userId = userResult[0].user_id;
+    const addressId = `a${Math.random().toString(36).substring(2, 8)}`;
+
+    // If this is set as default, unset all other default addresses for this user
+    if (validated.data.is_default) {
+      await sql`
+        UPDATE public.addresses 
+        SET is_default = false 
+        WHERE user_id = ${userId}
+      `;
+    }
+
+    // Insert the new address
+    await sql`
+      INSERT INTO public.addresses (
+        address_id, user_id, street_address_1, street_address_2, 
+        city, state_province, postal_code, country, is_default
+      )
+      VALUES (
+        ${addressId}, ${userId}, ${validated.data.street_address_1}, 
+        ${validated.data.street_address_2 || null}, ${validated.data.city}, 
+        ${validated.data.state_province}, ${validated.data.postal_code}, 
+        ${validated.data.country}, ${validated.data.is_default || false}
+      )
+    `;
+
+    // Revalidate the addresses page to show the new address
+    revalidatePath('/dashboard/addresses');
+
+    return {
+      message: 'Address created successfully!',
+      errors: {}
+    };
+
+  } catch (error) {
+    console.error('Database Error:', error);
+    return {
+      message: 'Database Error: Failed to create address',
+      errors: {},
+    };
+  }
+}
+
+export async function updateAddress(
+  addressId: string,
+  prevState: AddressState,
+  formData: FormData,
+): Promise<AddressState> {
+  // Get current user session
+  const { auth } = await import('@/auth');
+  const session = await auth();
+
+  if (!session?.user?.email) {
+    return {
+      message: 'You must be logged in to update an address',
+      errors: {},
+    };
+  }
+
+  // Validate form using Zod
+  const validated = CreateAddress.safeParse({
+    street_address_1: formData.get('address_line_1') || '',
+    street_address_2: formData.get('address_line_2') || '',
+    city: formData.get('city') || '',
+    state_province: formData.get('state_province') || '',
+    postal_code: formData.get('postal_code') || '',
+    country: formData.get('country') || '',
+    is_default: formData.get('is_default') === 'on',
+  });
+
+  if (!validated.success) {
+    const fieldErrors = validated.error.format();
+    const errors: AddressState['errors'] = {};
+    for (const key of Object.keys(fieldErrors)) {
+      const val = (fieldErrors as any)[key];
+      if (val && typeof val === 'object' && Array.isArray(val._errors)) {
+        (errors as any)[key] = val._errors as string[];
+      }
+    }
+    return {
+      ...prevState,
+      errors,
+      fieldValues: {
+        street_address_1: formData.get('address_line_1') as string || '',
+        street_address_2: formData.get('address_line_2') as string || '',
+        city: formData.get('city') as string || '',
+        state_province: formData.get('state_province') as string || '',
+        postal_code: formData.get('postal_code') as string || '',
+        country: formData.get('country') as string || '',
+      }
+    };
+  }
+
+  try {
+    // Get the user's ID from their email
+    const userResult = await sql`
+      SELECT user_id FROM public.users WHERE user_email = ${session.user.email}
+    `;
+
+    if (userResult.length === 0) {
+      return {
+        message: 'User not found',
+        errors: {},
+      };
+    }
+
+    const userId = userResult[0].user_id;
+
+    // Verify the address belongs to this user
+    const addressCheck = await sql`
+      SELECT address_id FROM public.addresses 
+      WHERE address_id = ${addressId} AND user_id = ${userId}
+    `;
+
+    if (addressCheck.length === 0) {
+      return {
+        message: 'Address not found or access denied',
+        errors: {},
+      };
+    }
+
+    // If this is set as default, unset all other default addresses for this user
+    if (validated.data.is_default) {
+      await sql`
+        UPDATE public.addresses 
+        SET is_default = false 
+        WHERE user_id = ${userId}
+      `;
+    }
+
+    // Update the address
+    await sql`
+      UPDATE public.addresses 
+      SET 
+        street_address_1 = ${validated.data.street_address_1},
+        street_address_2 = ${validated.data.street_address_2 || null},
+        city = ${validated.data.city},
+        state_province = ${validated.data.state_province},
+        postal_code = ${validated.data.postal_code},
+        country = ${validated.data.country},
+        is_default = ${validated.data.is_default || false},
+        updated_at = NOW()
+      WHERE address_id = ${addressId} AND user_id = ${userId}
+    `;
+
+    // Revalidate the addresses page to show the updated address
+    revalidatePath('/dashboard/addresses');
+    revalidatePath(`/dashboard/addresses/${addressId}/edit`);
+
+    return {
+      message: 'Address updated successfully!',
+      errors: {}
+    };
+
+  } catch (error) {
+    console.error('Database Error:', error);
+    return {
+      message: 'Database Error: Failed to update address',
+      errors: {},
+    };
+  }
+}
+
+export async function deleteAddress(addressId: string) {
+  // Get current user session
+  const { auth } = await import('@/auth');
+  const session = await auth();
+
+  if (!session?.user?.email) {
+    throw new Error('You must be logged in to delete an address');
+  }
+
+  try {
+    // Get the user's ID from their email
+    const userResult = await sql`
+      SELECT user_id FROM public.users WHERE user_email = ${session.user.email}
+    `;
+
+    if (userResult.length === 0) {
+      throw new Error('User not found');
+    }
+
+    const userId = userResult[0].user_id;
+
+    // Verify the address belongs to this user and delete it
+    const deleteResult = await sql`
+      DELETE FROM public.addresses 
+      WHERE address_id = ${addressId} AND user_id = ${userId}
+      RETURNING address_id
+    `;
+
+    if (deleteResult.length === 0) {
+      throw new Error('Address not found or access denied');
+    }
+
+    // Revalidate the addresses page to remove the deleted address
+    revalidatePath('/dashboard/addresses');
+
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw error;
+  }
+}
 
 export async function authenticate(
   prevState: string | undefined,
