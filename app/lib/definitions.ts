@@ -35,6 +35,7 @@ export type Review = {
   seller_id: string;
   user_id: string;
   user_first_name: string;
+  review_rating: number;
 };
 
 export type Category = {

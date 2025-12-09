@@ -243,7 +243,8 @@ export async function fetchReviewsByProductId(id: string): Promise<Review[]> {
     public.reviews.review_text,
     public.reviews.product_id,
     public.reviews.seller_id,
-    public.reviews.user_id,        
+    public.reviews.user_id,
+    public.reviews.review_rating,        
     public.users.user_first_name
   FROM public.reviews
   JOIN public.users ON public.reviews.user_id = public.users.user_id
@@ -258,11 +259,12 @@ export async function fetchReviewsByProductId(id: string): Promise<Review[]> {
       product_id: row.product_id ?? '',
       seller_id: row.seller_id ?? '',
       user_id: row.user_id ?? '',
-      user_first_name: row.user_first_name
+      user_first_name: row.user_first_name,
+      review_rating: row.review_rating ?? '', 
     }));
-
-    return reviews;
     console.log(reviews);
+    return reviews;
+    
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch reviews by product');
