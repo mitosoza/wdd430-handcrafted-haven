@@ -32,6 +32,16 @@ const userFormSchema = z.object({
   user_last_name: z.string(),
   user_email: z.string(),
   user_password: z.string()
+});
+
+const reviewFormSchema = z.object({
+  review_id: z.string(),
+  user_id: z.string(),
+  seller_id: z.string(),
+  product_id: z.string(),
+  review_text: z.string(),
+  review_date: z.string(),
+  review_rating: z.coerce.number(),
 })
 
 const addressFormSchema = z.object({
@@ -94,6 +104,19 @@ export type AddressState = {
     country?: string;
   };
 }
+export type reviewState ={
+  errors?: {
+    review_id?: string[];
+    user_id?: string[];
+    product_id?: string[];
+    review_text?: string[];
+    seller_id?: string[];
+    review_date?: string[];
+    review_rating?: string[];
+  }
+  message?: string | null;
+}
+
 
 const CreateProduct = FormSchema.omit({ product_id: true, seller_id: true }).extend({
   product_id: z.string().optional(),
@@ -103,6 +126,8 @@ const CreateProduct = FormSchema.omit({ product_id: true, seller_id: true }).ext
 const CreateUser = userFormSchema.omit({ user_id: true })
 
 const CreateAddress = addressFormSchema.omit({ address_id: true, user_id: true })
+
+const CreateReview = reviewFormSchema.omit({ review_id: true })
 
 export async function createProduct(
   prevState: State,
@@ -414,6 +439,52 @@ export async function createUser(
   }
 }
 
+export async function createReview(
+  prevState: reviewState,
+  formData: FormData,
+): Promise<reviewState> {
+  const validated = CreateReview.safeParse({
+    review_id: formData.get('review_id') || '',
+    review_text: formData.get('review_text'),
+    review_date: formData.get('review_date'),
+    review_rating: formData.get('review_rating'),
+    seller_id: formData.get('seller_id'),
+    user_id: formData.get('user_id'),
+    product_id: formData.get('product_id'),
+  });       
+
+  if (!validated.success) {
+    const fieldErrors = validated.error.format();
+    const errors: reviewState['errors'] = {};
+    for (const key of Object.keys(fieldErrors)) {
+      const val = (fieldErrors as any)[key];
+      if (val && typeof val === 'object' && Array.isArray(val._errors)) {
+        (errors as any)[key] = val._errors as string[];
+      }
+    }
+    return { ...prevState, errors };
+  }
+
+  const reviewId = `r${Math.random().toString(36).substring(2, 5)}`;
+
+  try {
+    await sql`
+      INSERT INTO public.reviews (review_id, review_text, review_date, review_rating, seller_id, user_id, product_id)
+      VALUES (${reviewId}, ${validated.data.review_text}, ${validated.data.review_date}, ${validated.data.review_rating}, ${validated.data.seller_id}, ${validated.data.user_id}, ${validated.data.product_id})
+    `;
+
+    revalidatePath('/reviews');
+
+    return { message: 'Review created successfully!', errors: {} };
+  } catch (error) {
+    console.log('Database Error:', error);
+    return {
+      message: 'Database Error: Failed to create review',
+      errors: {},
+    };
+  }
+}
+
 export async function createAddress(
   prevState: AddressState,
   formData: FormData,
@@ -421,7 +492,6 @@ export async function createAddress(
   // Get current user session
   const { auth } = await import('@/auth');
   const session = await auth();
-
   if (!session?.user?.email) {
     return {
       message: 'You must be logged in to create an address',
