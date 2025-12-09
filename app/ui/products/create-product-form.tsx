@@ -4,8 +4,14 @@ import { useActionState } from 'react';
 import { createProduct, State } from '@/app/lib/actions';
 import { Button } from '@/app/ui/button';
 import Link from 'next/link';
+import { Category } from '@/app/lib/definitions';
 
-export default function Form() {
+type FormProps = {
+    categories: Category[];
+    sellerId: string;
+};
+
+export default function Form({ categories, sellerId }: FormProps) {
     const initialState: State = { message: null, errors: {} };
 
     const [state, formAction] = useActionState<State, FormData>(
@@ -14,7 +20,7 @@ export default function Form() {
     );
 
     return (
-        <form action={formAction} encType="multipart/form-data" className="rounded-lg bg-white p-6 shadow">
+        <form action={formAction} className="rounded-lg bg-white p-6 shadow">
             {state?.message && (
                 <div className="mb-6 rounded-lg bg-green-50 p-4 text-green-800 border border-green-200">
                     {state.message}
@@ -22,6 +28,7 @@ export default function Form() {
             )}
 
             <input type="hidden" name="product_id" value="" />
+            <input type="hidden" name="seller_id" value={sellerId} />
 
             {/* Product Name */}
             <div className="mb-4">
@@ -54,6 +61,29 @@ export default function Form() {
                     required
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
+                {state?.errors?.product_description && (
+                    <p className="mt-1 text-sm text-red-600">{state.errors.product_description.join(', ')}</p>
+                )}
+            </div>
+
+            {/* Category */}
+            <div className="mb-4">
+                <label htmlFor="category_id" className="mb-2 block text-sm font-semibold text-gray-900">
+                    Category
+                </label>
+                <select
+                    id="category_id"
+                    name="category_id"
+                    required
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                >
+                    <option value="">Select a category</option>
+                    {categories.map((category) => (
+                        <option key={category.category_id} value={category.category_id}>
+                            {category.category_name}
+                        </option>
+                    ))}
+                </select>
                 {state?.errors?.product_description && (
                     <p className="mt-1 text-sm text-red-600">{state.errors.product_description.join(', ')}</p>
                 )}
@@ -102,8 +132,8 @@ export default function Form() {
                 <Button type="submit" className="bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">
                     Create Product
                 </Button>
-                <Link 
-                    href="/products" 
+                <Link
+                    href="/products"
                     className="rounded-lg border border-gray-300 px-6 py-2 text-gray-900 font-medium hover:bg-gray-50"
                 >
                     Cancel

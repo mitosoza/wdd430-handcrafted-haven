@@ -23,7 +23,8 @@ const FormSchema = z.object({
     invalid_type_error: 'Please enter a valid product',
   }),
   product_description: z.string(),
-  seller_id: z.string()
+  seller_id: z.string(),
+  category_id: z.string().min(1, 'Please select a category')
 });
 
 const userFormSchema = z.object({
@@ -54,6 +55,7 @@ export type State = {
     product_image?: string[];
     price?: string[];
     seller_id?: string[];
+    category_id?: string[];
   };
   message?: string | null;
 };
@@ -95,9 +97,8 @@ export type AddressState = {
   };
 }
 
-const CreateProduct = FormSchema.omit({ product_id: true, seller_id: true }).extend({
+const CreateProduct = FormSchema.omit({ product_id: true }).extend({
   product_id: z.string().optional(),
-  seller_id: z.string().optional(),
 });
 
 const CreateUser = userFormSchema.omit({ user_id: true })
@@ -114,7 +115,8 @@ export async function createProduct(
     price: formData.get('price'),
     product_name: formData.get('product_name'),
     product_description: formData.get('product_description'),
-    seller_id: '',
+    seller_id: formData.get('seller_id'),
+    category_id: formData.get('category_id'),
   });
 
   if (!validated.success) {
@@ -131,9 +133,10 @@ export async function createProduct(
     return { ...prevState, errors };
   }
 
-  // Generate a product_id and seller_id
+  // Generate a product_id
   const productId = validated.data.product_id || `p${Date.now()}`;
-  const sellerId = `s${Math.random().toString(36).substring(2, 5)}`;
+  const sellerId = validated.data.seller_id;
+  const categoryId = validated.data.category_id;
 
   let productImage = '';
 
@@ -190,8 +193,8 @@ export async function createProduct(
   // Insert data into the database
   try {
     await sql`
-      INSERT INTO public.products (product_id, price, product_name, product_description, seller_id, product_image)
-      VALUES (${productId}, ${validated.data.price}, ${validated.data.product_name}, ${validated.data.product_description}, ${sellerId}, ${productImage})
+      INSERT INTO public.products (product_id, price, product_name, product_description, seller_id, product_image, category_id)
+      VALUES (${productId}, ${validated.data.price}, ${validated.data.product_name}, ${validated.data.product_description}, ${sellerId}, ${productImage}, ${categoryId})
     `;
 
     // Revalidate the products page cache so the new product appears

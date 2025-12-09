@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import Header from '@/app/ui/header';
 import { lusitana } from '@/app/ui/fonts';
+import { PlusIcon } from '@heroicons/react/24/outline';
 
 export default async function Page() {
     const sellers = (await fetchSellersWithProducts()) ?? [];
@@ -44,7 +45,16 @@ export default async function Page() {
         <main className="min-h-screen landing-page-gradient">
             <Header />
             <div className="p-6">
-                <h1 className={`${lusitana.className} text-4xl text-gray-900 mb-16`}>Sellers</h1>
+                <div className="flex items-center justify-between mb-8">
+                    <h1 className={`${lusitana.className} text-4xl text-gray-900`}>Sellers</h1>
+                    <Link
+                        href="/sellers/create"
+                        className="flex h-10 items-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-cyan-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                    >
+                        <span className="hidden md:block">Create Seller</span>
+                        <PlusIcon className="h-5 md:ml-4" />
+                    </Link>
+                </div>
 
                 {sellers.length === 0 ? (
                     <div className="text-gray-600">No sellers found.</div>
