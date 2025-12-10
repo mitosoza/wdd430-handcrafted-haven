@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { CartState } from '@/app/lib/actions';
 
 interface CartItem {
     productId: string;
@@ -16,7 +15,6 @@ interface AddToCartFormProps {
     productName: string;
     price: string;
     productImage: string;
-    cartState?: CartState;
     onAddToCart?: (formData: FormData) => void;
 }
 
@@ -25,7 +23,6 @@ export default function AddToCartForm({
     productName,
     price,
     productImage,
-    cartState,
     onAddToCart
 }: AddToCartFormProps) {
     const [quantity, setQuantity] = useState(1);
@@ -35,7 +32,7 @@ export default function AddToCartForm({
         try {
             // Get existing cart from localStorage
             const existingCart = localStorage.getItem('havenCart');
-            let cartItems: CartItem[] = existingCart ? JSON.parse(existingCart) : [];
+            const cartItems: CartItem[] = existingCart ? JSON.parse(existingCart) : [];
 
             // Check if item already exists in cart
             const existingItemIndex = cartItems.findIndex(item => item.productId === productId);

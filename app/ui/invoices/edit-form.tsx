@@ -16,10 +16,10 @@ export default function EditInvoiceForm(
 ) {
   //const updateInvoiceWithId = updateInvoice.bind(null, invoice.id);
   //const [state, formAction] = useFormState(updateInvoiceWithId, {
-    //message: '',
-    //errors: {},
+  //message: '',
+  //errors: {},
   //});
   return (
-    <h1>hello</h1>
+    <h1>Edit Invoice</h1>
   );
 }

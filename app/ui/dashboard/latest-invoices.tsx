@@ -7,6 +7,6 @@
 export default async function LatestInvoices() {
   //const latestInvoices = await fetchLatestInvoices();
   return (
-    <h1>hello</h1>
+    <h1>Latest Invoices</h1>
   );
 }

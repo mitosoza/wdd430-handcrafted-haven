@@ -79,7 +79,8 @@ export type Address = {
   updated_at: string;
   first_name: string;
   last_name: string;
-}
+  seller_id?: string;
+};
 
 export type Revenue = {
   month: string;

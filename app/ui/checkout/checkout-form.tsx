@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { formatCurrency } from '@/app/lib/utils';
-import ImageWithFallback from '@/app/ui/products/image-with-fallback';
 import { createOrder, OrderState } from '@/app/lib/actions';
 import { useActionState } from 'react';
 
@@ -46,8 +44,8 @@ export default function CheckoutForm() {
     const [newAddress, setNewAddress] = useState({
         first_name: '',
         last_name: '',
-        address_line_1: '',
-        address_line_2: '',
+        street_address_1: '',
+        street_address_2: '',
         city: '',
         state: '',
         postal_code: '',
@@ -89,7 +87,7 @@ export default function CheckoutForm() {
     }, []);
 
     const handleSaveAddress = async () => {
-        if (!newAddress.first_name || !newAddress.last_name || !newAddress.address_line_1 ||
+        if (!newAddress.first_name || !newAddress.last_name || !newAddress.street_address_1 ||
             !newAddress.city || !newAddress.state || !newAddress.postal_code) {
             alert('Please fill in all required address fields');
             return;
@@ -97,8 +95,8 @@ export default function CheckoutForm() {
 
         try {
             const formData = new FormData();
-            formData.append('address_line_1', newAddress.address_line_1);
-            formData.append('address_line_2', newAddress.address_line_2 || '');
+            formData.append('street_address_1', newAddress.street_address_1);
+            formData.append('street_address_2', newAddress.street_address_2 || '');
             formData.append('city', newAddress.city);
             formData.append('state_province', newAddress.state);
             formData.append('postal_code', newAddress.postal_code);
@@ -129,8 +127,8 @@ export default function CheckoutForm() {
                 setNewAddress({
                     first_name: '',
                     last_name: '',
-                    address_line_1: '',
-                    address_line_2: '',
+                    street_address_1: '',
+                    street_address_2: '',
                     city: '',
                     state: '',
                     postal_code: '',
@@ -337,8 +335,8 @@ export default function CheckoutForm() {
                                     <input
                                         type="text"
                                         id="addressLine1"
-                                        value={newAddress.address_line_1}
-                                        onChange={(e) => setNewAddress(prev => ({ ...prev, address_line_1: e.target.value }))}
+                                        value={newAddress.street_address_1}
+                                        onChange={(e) => setNewAddress(prev => ({ ...prev, street_address_1: e.target.value }))}
                                         className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                                         required
                                     />
@@ -350,8 +348,8 @@ export default function CheckoutForm() {
                                     <input
                                         type="text"
                                         id="addressLine2"
-                                        value={newAddress.address_line_2}
-                                        onChange={(e) => setNewAddress(prev => ({ ...prev, address_line_2: e.target.value }))}
+                                        value={newAddress.street_address_2}
+                                        onChange={(e) => setNewAddress(prev => ({ ...prev, street_address_2: e.target.value }))}
                                         className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                                     />
                                 </div>

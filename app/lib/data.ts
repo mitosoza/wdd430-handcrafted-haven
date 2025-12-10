@@ -1,7 +1,27 @@
-export async function fetchOrdersForUser(userId: string): Promise<Order[]> {
+export async function fetchOrdersForUser(userEmail: string): Promise<Order[]> {
   try {
+    console.log('Fetching orders for user email:', userEmail);
+    const [userResult, sellerResult] = await Promise.all([
+      sql`SELECT user_id FROM public.users WHERE user_email = ${userEmail}`,
+      sql`SELECT seller_id FROM public.sellers WHERE seller_email = ${userEmail}`
+    ]);
+
+    let actualUserId: string | undefined = undefined;
+    let actualSellerId: string | undefined = undefined;
+    if (userResult.length > 0) {
+      actualUserId = userResult[0].user_id;
+    }
+    if (sellerResult.length > 0) {
+      actualSellerId = sellerResult[0].seller_id;
+    }
+    console.log('Actual User ID:', actualUserId);
+    console.log('Actual Seller ID:', actualSellerId);
+    if (!actualUserId && !actualSellerId) {
+      return [];
+    }
+
     const rows = await sql<Order[]>`
-      SELECT * FROM public.orders WHERE user_id = ${userId} ORDER BY order_date DESC
+      SELECT * FROM public.orders WHERE user_id = ${actualUserId || null} OR seller_id = ${actualSellerId || null} ORDER BY order_date DESC
     `;
     return rows;
   } catch (error) {
@@ -272,11 +292,11 @@ export async function fetchReviewsByProductId(id: string): Promise<Review[]> {
       seller_id: row.seller_id ?? '',
       user_id: row.user_id ?? '',
       user_first_name: row.user_first_name,
-      review_rating: row.review_rating ?? '', 
+      review_rating: row.review_rating ?? '',
     }));
     console.log(reviews);
     return reviews;
-    
+
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch reviews by product');
@@ -285,46 +305,32 @@ export async function fetchReviewsByProductId(id: string): Promise<Review[]> {
 
 export async function fetchUserAddresses(userEmail: string, userRole?: 'user' | 'seller'): Promise<Address[]> {
   try {
-    let userId: string;
+    let userId: string | undefined = undefined;
+    let sellerId: string | undefined = undefined;
 
-    if (userRole === 'seller') {
-      // Get seller_id from the email
-      const sellerResult = await sql`
-        SELECT seller_id FROM public.sellers WHERE seller_email = ${userEmail}
-      `;
+    // Try to get both user_id and seller_id from email
+    const [userResult, sellerResult] = await Promise.all([
+      sql`SELECT user_id FROM public.users WHERE user_email = ${userEmail}`,
+      sql`SELECT seller_id FROM public.sellers WHERE seller_email = ${userEmail}`
+    ]);
 
-      if (sellerResult.length === 0) {
-        return [];
-      }
-
-      userId = sellerResult[0].seller_id;
-    } else {
-      // Default to user table or try user first, then seller
-      const userResult = await sql`
-        SELECT user_id FROM public.users WHERE user_email = ${userEmail}
-      `;
-
-      if (userResult.length === 0) {
-        // Try seller table as fallback
-        const sellerResult = await sql`
-          SELECT seller_id FROM public.sellers WHERE seller_email = ${userEmail}
-        `;
-
-        if (sellerResult.length === 0) {
-          return [];
-        }
-
-        userId = sellerResult[0].seller_id;
-      } else {
-        userId = userResult[0].user_id;
-      }
+    if (userResult.length > 0) {
+      userId = userResult[0].user_id;
+    }
+    if (sellerResult.length > 0) {
+      sellerId = sellerResult[0].seller_id;
     }
 
-    // Fetch addresses for this user
+    if (!userId && !sellerId) {
+      return [];
+    }
+
+    // Fetch addresses for this user or seller
     const addresses = await sql<Address[]>`
       SELECT 
         address_id,
         user_id,
+        seller_id,
         street_address_1,
         street_address_2,
         city,
@@ -337,7 +343,7 @@ export async function fetchUserAddresses(userEmail: string, userRole?: 'user' | 
         created_at,
         updated_at
       FROM public.addresses 
-      WHERE user_id = ${userId}
+      WHERE (user_id = ${userId || null} OR seller_id = ${sellerId || null})
       ORDER BY is_default DESC, created_at DESC
     `;
 
@@ -350,22 +356,31 @@ export async function fetchUserAddresses(userEmail: string, userRole?: 'user' | 
 
 export async function fetchAddressById(addressId: string, userEmail: string): Promise<Address | null> {
   try {
-    // First get the user_id from the email
-    const userResult = await sql`
-      SELECT user_id FROM public.users WHERE user_email = ${userEmail}
-    `;
+    // Get both user_id and seller_id from the email
+    const [userResult, sellerResult] = await Promise.all([
+      sql`SELECT user_id FROM public.users WHERE user_email = ${userEmail}`,
+      sql`SELECT seller_id FROM public.sellers WHERE seller_email = ${userEmail}`
+    ]);
 
-    if (userResult.length === 0) {
+    let userId: string | undefined = undefined;
+    let sellerId: string | undefined = undefined;
+    if (userResult.length > 0) {
+      userId = userResult[0].user_id;
+    }
+    if (sellerResult.length > 0) {
+      sellerId = sellerResult[0].seller_id;
+    }
+
+    if (!userId && !sellerId) {
       return null;
     }
 
-    const userId = userResult[0].user_id;
-
-    // Fetch the specific address for this user
+    // Fetch the specific address for this user or seller
     const addresses = await sql<Address[]>`
       SELECT 
         address_id,
         user_id,
+        seller_id,
         street_address_1,
         street_address_2,
         city,
@@ -378,7 +393,7 @@ export async function fetchAddressById(addressId: string, userEmail: string): Pr
         first_name,
         last_name
       FROM public.addresses 
-      WHERE address_id = ${addressId} AND user_id = ${userId}
+      WHERE address_id = ${addressId} AND (user_id = ${userId || null} OR seller_id = ${sellerId || null})
     `;
 
     return addresses.length > 0 ? addresses[0] : null;

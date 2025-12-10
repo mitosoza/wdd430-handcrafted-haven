@@ -26,9 +26,9 @@ export function UpdateInvoice({ id }: { id: string }) {
 }
 
 export function DeleteInvoice({ }: { id: string }) {
-  
+
 
   return (
-    <h1>hello</h1>
+    <h1>Delete Invoice</h1>
   );
 }

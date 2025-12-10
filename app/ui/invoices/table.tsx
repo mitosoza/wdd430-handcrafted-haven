@@ -13,6 +13,6 @@ export default async function InvoicesTable({
   //const invoices = ["invoices", "invoices2"];
 
   return (
-   <h1>Hello</h1>
+    <h1>Invoices</h1>
   );
 }

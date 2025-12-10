@@ -20,6 +20,6 @@ export default async function RevenueChart() { // Make component async, remove t
   // }
 
   return (
-    <h1>hello</h1>
+    <h1>Revenue Chart</h1>
   );
 }

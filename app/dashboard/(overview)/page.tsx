@@ -1,10 +1,7 @@
-import RevenueChart from '@/app/ui/dashboard/revenue-chart';
-import LatestInvoices from '@/app/ui/dashboard/latest-invoices';
-//import CardWrapper from '@/app/ui/dashboard/cards';
 import { lusitana } from '@/app/ui/fonts';
-import { Suspense } from 'react';
-import { RevenueChartSkeleton, LatestInvoicesSkeleton } from '@/app/ui/skeletons';
 import { Metadata } from 'next';
+import Link from 'next/link';
+import { auth } from '@/auth';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -13,21 +10,18 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 export default async function Page() {
+  const session = await auth();
+  const userName = session?.user?.name || session?.user?.email || 'User';
+
   return (
-    <main>
-      <h1 className={`${lusitana.className} mb-4 text-xl md:text-2xl`}>
-        Dashboard
-      </h1>
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="w-full max-w-2xl mx-auto py-12 px-4">
+      <h1 className={`${lusitana.className} text-3xl font-bold mb-6`}>Welcome, {userName}!</h1>
+      <p className="mb-8 text-gray-700 text-lg">This is your dashboard. Here you can view, update your account and manage your addresses.</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Link href="/dashboard/orders" className="rounded-lg bg-green-600 text-white px-6 py-4 text-center font-semibold hover:bg-green-700 transition">My Orders</Link>
+        <Link href="/dashboard/addresses" className="rounded-lg bg-green-600 text-white px-6 py-4 text-center font-semibold hover:bg-green-700 transition">My Addresses</Link>
+        <Link href="/products" className="rounded-lg bg-green-600 text-white px-6 py-4 text-center font-semibold hover:bg-green-700 transition">Browse Products</Link>
       </div>
-      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4 lg:grid-cols-8">
-        <Suspense fallback={<RevenueChartSkeleton />}>
-          <RevenueChart />
-        </Suspense>
-        <Suspense fallback={<LatestInvoicesSkeleton />}>
-          <LatestInvoices />
-        </Suspense>
-      </div>
-    </main>
+    </div>
   );
 }

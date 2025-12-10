@@ -29,14 +29,6 @@ const FormSchema = z.object({
   })
 });
 
-const userFormSchema = z.object({
-  user_id: z.string(),
-  user_first_name: z.string(),
-  user_last_name: z.string(),
-  user_email: z.string(),
-  user_password: z.string()
-});
-
 const reviewFormSchema = z.object({
   review_id: z.string(),
   user_id: z.string(),
@@ -125,7 +117,7 @@ export type AddressState = {
     last_name?: string;
   };
 }
-export type reviewState ={
+export type reviewState = {
   errors?: {
     review_id?: string[];
     user_id?: string[];
@@ -144,7 +136,7 @@ const CreateProduct = FormSchema.omit({ product_id: true, seller_id: true }).ext
   seller_id: z.string().optional(),
 });
 
-const CreateUser = userFormSchema.omit({ user_id: true })
+// Removed unused CreateUser
 
 const CreateAddress = addressFormSchema.omit({ address_id: true, user_id: true })
 
@@ -254,7 +246,7 @@ export async function createProduct(
     // Revalidate the products page cache so the new product appears
     revalidatePath('/products');
 
-    return { message: 'Product created successfully!', errors: {} };
+    return { message: 'Product created successfully!', errors: undefined };
   } catch (error) {
     console.error('Database Error:', error);
     // If a database error occurs, return a more specific error.
@@ -376,10 +368,10 @@ export async function updateProduct(
     }
 
     revalidatePath('/products');
-    return { message: 'Product updated successfully!', errors: {} };
+    return { message: 'Product updated successfully!', errors: undefined };
   } catch (error) {
     console.error('Database Error:', error);
-    return { message: 'Database Error: Failed to update product.', errors: {} };
+    return { message: 'Database Error: Failed to update product.', errors: undefined };
   }
 }
 
@@ -485,7 +477,7 @@ export async function createUser(
           INSERT INTO public.sellers (seller_id, seller_first_name, seller_last_name, seller_email, seller_image, seller_password)
           VALUES (${sellerId}, ${validated.data.user_first_name}, ${validated.data.user_last_name}, ${validated.data.user_email}, ${sellerImage}, ${hashedPassword})
         `;
-        return { message: 'Seller account created successfully!', errors: {} };
+        return { message: 'Seller account created successfully!', errors: undefined };
       } else {
         return { ...prevState, message: 'Seller image is required.' };
       }
@@ -495,7 +487,7 @@ export async function createUser(
         INSERT INTO public.users (user_id, user_first_name, user_last_name, user_email, user_password)
         VALUES (${userId}, ${validated.data.user_first_name}, ${validated.data.user_last_name}, ${validated.data.user_email}, ${hashedPassword})
       `;
-      return { message: 'Account created successfully!', errors: {} };
+      return { message: 'Account created successfully!', errors: undefined };
     }
   } catch (error) {
     console.log('Database Error:', error);
@@ -560,7 +552,7 @@ export async function createReview(
 
     revalidatePath('/reviews');
 
-    return { message: 'Review created successfully!', errors: {} };
+    return { message: 'Review created successfully!', errors: undefined };
   } catch (error) {
     console.log('Database Error:', error);
     return {
@@ -624,37 +616,57 @@ export async function createAddress(
 
   try {
     // Get the user's ID from their email
-    const userResult = await sql`
-      SELECT user_id FROM public.users WHERE user_email = ${session.user.email}
-    `;
+    console.log('Session:', session);
+    // Check both users and sellers tables for user_id/seller_id
+    const [userResult, sellerResult] = await Promise.all([
+      sql`SELECT user_id FROM public.users WHERE user_email = ${session.user.email}`,
+      sql`SELECT seller_id FROM public.sellers WHERE seller_email = ${session.user.email}`
+    ]);
 
-    if (userResult.length === 0) {
+    let userId: string | undefined = undefined;
+    let sellerId: string | undefined = undefined;
+    if (userResult.length > 0) {
+      userId = userResult[0].user_id;
+    } else if (sellerResult.length > 0) {
+      sellerId = sellerResult[0].seller_id;
+    }
+
+    if (!userId && !sellerId) {
       return {
         message: 'User not found',
         errors: {},
       };
     }
-
-    const userId = userResult[0].user_id;
     const addressId = `a${Math.random().toString(36).substring(2, 8)}`;
-
-    // If this is set as default, unset all other default addresses for this user
+    console.log('Generated Address ID:', addressId);
+    console.log('User ID:', userId);
+    console.log('Seller ID:', sellerId);
+    console.log('Validated Address Data:', validated.data);
+    // If this is set as default, unset all other default addresses for this user/seller
     if (validated.data.is_default) {
-      await sql`
-        UPDATE public.addresses 
-        SET is_default = false 
-        WHERE user_id = ${userId}
-      `;
+      if (userId) {
+        await sql`
+          UPDATE public.addresses
+          SET is_default = false
+          WHERE user_id = ${userId}
+        `;
+      } else if (sellerId) {
+        await sql`
+          UPDATE public.addresses
+          SET is_default = false
+          WHERE seller_id = ${sellerId}
+        `;
+      }
     }
 
     // Insert the new address
     await sql`
       INSERT INTO public.addresses (
-        address_id, user_id, street_address_1, street_address_2, 
+        address_id, user_id, seller_id, street_address_1, street_address_2, 
         city, state_province, postal_code, country, is_default, first_name, last_name
       )
       VALUES (
-        ${addressId}, ${userId}, ${validated.data.street_address_1}, 
+        ${addressId}, ${userId || null}, ${sellerId || null}, ${validated.data.street_address_1}, 
         ${validated.data.street_address_2 || null}, ${validated.data.city}, 
         ${validated.data.state_province}, ${validated.data.postal_code}, 
         ${validated.data.country}, ${validated.data.is_default || false}, 
@@ -889,7 +901,7 @@ export async function deleteProduct(id: string) {
 
 export type CartState = {
   message?: string | null;
-  errors?: {};
+  errors?: unknown;
 }
 
 export type OrderState = {
@@ -950,34 +962,32 @@ export async function createOrder(
       };
     }
 
-    let actualUserId: string;
+
+    let actualUserId: string | null = null;
+    let actualSellerId: string | null = null;
 
     if (session.user.role === 'user') {
       const userResult = await sql`
         SELECT user_id FROM users WHERE user_email = ${session.user.email}
       `;
-
       if (userResult.length === 0) {
         return {
           message: 'User account not found.',
           errors: { general: ['Please create an account to place orders.'] }
         };
       }
-
       actualUserId = userResult[0].user_id;
     } else if (session.user.role === 'seller') {
       const sellerResult = await sql`
         SELECT seller_id FROM sellers WHERE seller_email = ${session.user.email}
       `;
-
       if (sellerResult.length === 0) {
         return {
           message: 'Seller account not found.',
           errors: { general: ['Please create an account to place orders.'] }
         };
       }
-
-      actualUserId = sellerResult[0].seller_id;
+      actualSellerId = sellerResult[0].seller_id;
     } else {
       return {
         message: 'Invalid account type.',
@@ -985,12 +995,24 @@ export async function createOrder(
       };
     }
 
+
     await sql.begin(async sql => {
       console.log('Actual User ID:', actualUserId);
+      console.log('Actual Seller ID:', actualSellerId);
       console.log('Provided Shipping Address ID:', shipping_address_id);
-      const existingAddress = await sql`
-        SELECT address_id FROM addresses WHERE address_id = ${shipping_address_id} AND user_id = ${actualUserId}
-      `;
+
+      let existingAddress;
+      if (actualUserId) {
+        existingAddress = await sql`
+          SELECT address_id FROM addresses WHERE address_id = ${shipping_address_id} AND user_id = ${actualUserId}
+        `;
+      } else if (actualSellerId) {
+        existingAddress = await sql`
+          SELECT address_id FROM addresses WHERE address_id = ${shipping_address_id} AND seller_id = ${actualSellerId}
+        `;
+      } else {
+        throw new Error('No valid user or seller ID for address check.');
+      }
 
       if (existingAddress.length === 0) {
         throw new Error('Invalid shipping address. Please select a valid address.');
@@ -998,10 +1020,21 @@ export async function createOrder(
 
       const orderId = crypto.randomUUID();
 
-      await sql`
-        INSERT INTO orders (order_id, user_id, order_date, order_status, total_amount, shipping_address_id, created_at, updated_at)
-        VALUES (${orderId}, ${actualUserId}, NOW(), 'pending', ${total_amount}, ${shipping_address_id}, NOW(), NOW())
-      `;
+      // Insert into orders with correct user_id or seller_id
+      if (actualUserId) {
+        await sql`
+          INSERT INTO orders (order_id, user_id, order_date, order_status, total_amount, shipping_address_id, created_at, updated_at)
+          VALUES (${orderId}, ${actualUserId}, NOW(), 'pending', ${total_amount}, ${shipping_address_id}, NOW(), NOW())
+        `;
+      } else if (actualSellerId) {
+        await sql`
+          INSERT INTO orders (order_id, seller_id, order_date, order_status, total_amount, shipping_address_id, created_at, updated_at)
+          VALUES (${orderId}, ${actualSellerId}, NOW(), 'pending', ${total_amount}, ${shipping_address_id}, NOW(), NOW())
+        `;
+      } else {
+        throw new Error('No valid user or seller ID for order.');
+      }
+
       for (const item of cart_items) {
         const orderItemId = crypto.randomUUID();
         const totalPrice = (parseFloat(item.unit_price) * item.quantity).toString();
