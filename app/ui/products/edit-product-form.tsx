@@ -6,7 +6,7 @@ import { Product, Seller } from "@/app/lib/definitions";
 import { CurrencyDollarIcon, UserCircleIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { Button } from "@/app/ui/button";
-import { updateProduct, State } from "@/app/lib/actions";
+import { updateProduct, deleteProduct, State } from "@/app/lib/actions";
 import { useActionState } from "react";
 
 export default function EditProductForm({
@@ -146,11 +146,16 @@ export default function EditProductForm({
 
       <div className="mt-6 flex justify-end gap-4">
         <Link
-          href="/dashboard/products"
+          href="/products"
           className="flex h-10 items-center rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-600 hover:bg-gray-200"
         >
           Cancel
         </Link>
+        <Button type="button" onClick={async () => {
+             if (confirm('Are you sure you want to delete this product?')) {
+                 await deleteProduct(product.id);
+             }
+        }} className="bg-red-600 hover:bg-red-700">Delete Product</Button>
         <Button type="submit">Edit Product</Button>
       </div>
     </form>

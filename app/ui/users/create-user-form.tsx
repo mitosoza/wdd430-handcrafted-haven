@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { createUser, UserState } from '@/app/lib/actions';
 import { Button } from '@/app/ui/button';
 import Link from 'next/link';
@@ -13,6 +13,7 @@ export default function UserForm() {
     createUser,
     initialState,
   );
+  const [userType, setUserType] = useState('buyer');
 
   return (
     <form
@@ -30,6 +31,19 @@ export default function UserForm() {
         Sign up
       </h1>
       <div className="mb-4">
+        <input type="hidden" name="user_id" value="" />
+        <label htmlFor="user_type" className="mb-2 block text-sm font-semibold text-gray-900">User Type</label>
+        <select
+          id="user_type"
+          name="user_type"
+          required
+          value={userType}
+          onChange={(e) => setUserType(e.target.value)}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+        >
+          <option value="buyer">Buyer</option>
+          <option value="seller">Seller</option>
+        </select>
         <label
           htmlFor="user_first_name"
           className="mb-2 block text-sm font-semibold text-gray-900"
@@ -93,12 +107,26 @@ export default function UserForm() {
           required
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
         />
+        {userType === 'seller' && (
+          <>
+            <label htmlFor="seller_image" className="mb-2 block text-sm font-semibold text-gray-900 mt-4">Seller Image</label>
+            <input
+              id="seller_image"
+              name="seller_image"
+              type="file"
+              accept=".jpg,.jpeg,.png"
+              required
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+          </>
+        )}
         {state?.errors?.user_email && (
           <p className="mt-1 text-sm text-red-600">
             {state.errors.user_email.join(', ')}
           </p>
         )}
       </div>
+
 
       {/* Password */}
       <div className="mb-4">

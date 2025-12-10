@@ -2,6 +2,7 @@ import Form from "@/app/ui/products/create-review-form";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { fetchProductById, fetchSellerById } from "@/app/lib/data";
+import { auth } from "@/auth";
 
 export const dynamicParams = false;
 
@@ -25,11 +26,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     notFound();
   }
   
+  const session = await auth();
+
   return (
     <main className="p-6">
       <div className="max-w-2xl">
         <h1 className="mb-6 text-3xl font-semibold">Create Review for {product.product_name}</h1>
-        <Form product={product} seller={seller} /> 
+        <Form product={product} seller={seller} user={session?.user} /> 
       </div>
     </main>
   );

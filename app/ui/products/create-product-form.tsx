@@ -5,7 +5,9 @@ import { createProduct, State } from '@/app/lib/actions';
 import { Button } from '@/app/ui/button';
 import Link from 'next/link';
 
-export default function Form() {
+import { Category } from '@/app/lib/definitions';
+
+export default function Form({ categories }: { categories: Category[] }) {
     const initialState: State = { message: null, errors: {} };
 
     const [state, formAction] = useActionState<State, FormData>(
@@ -76,6 +78,30 @@ export default function Form() {
                 />
                 {state?.errors?.price && (
                     <p className="mt-1 text-sm text-red-600">{state.errors.price.join(', ')}</p>
+                )}
+            </div>
+
+            {/* Category */}
+            <div className="mb-4">
+                <label htmlFor="category_id" className="mb-2 block text-sm font-semibold text-gray-900">
+                    Category
+                </label>
+                <select
+                    id="category_id"
+                    name="category_id"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    defaultValue=""
+                    required
+                >
+                    <option value="" disabled>Select a category</option>
+                    {categories.map((category) => (
+                        <option key={category.category_id} value={category.category_id}>
+                            {category.category_name}
+                        </option>
+                    ))}
+                </select>
+                 {state?.errors?.category_id && (
+                    <p className="mt-1 text-sm text-red-600">{state.errors.category_id.join(', ')}</p>
                 )}
             </div>
 

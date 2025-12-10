@@ -1,9 +1,9 @@
 
 import { Metadata } from "next";
 import UserForm from "@/app/ui/users/create-user-form";
-import { fetchUsers } from "@/app/lib/data";
 import { Suspense } from 'react';
 import Header from '@/app/ui/header';
+import { fetchSellers, fetchUsers } from "@/app/lib/data";
 
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,8 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  fetchUsers();
+fetchUsers();
+fetchSellers();
   return (
     <main className="flex flex-col min-h-screen landing-page-gradient">
       <Header />

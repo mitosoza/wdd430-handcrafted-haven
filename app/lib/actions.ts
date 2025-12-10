@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import postgres from 'postgres';
-import { signIn } from '@/auth';
+import { signIn, auth } from '@/auth';
 import { AuthError } from 'next-auth';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
@@ -23,7 +23,10 @@ const FormSchema = z.object({
     invalid_type_error: 'Please enter a valid product',
   }),
   product_description: z.string(),
-  seller_id: z.string()
+  seller_id: z.string(),
+  category_id: z.string({
+    invalid_type_error: 'Please select a product category',
+  })
 });
 
 const userFormSchema = z.object({
@@ -64,6 +67,7 @@ export type State = {
     product_image?: string[];
     price?: string[];
     seller_id?: string[];
+    category_id?: string[];
   };
   message?: string | null;
 };
@@ -139,6 +143,7 @@ export async function createProduct(
     price: formData.get('price'),
     product_name: formData.get('product_name'),
     product_description: formData.get('product_description'),
+    category_id: formData.get('category_id'),
     seller_id: '',
   });
 
@@ -156,9 +161,19 @@ export async function createProduct(
     return { ...prevState, errors };
   }
 
-  // Generate a product_id and seller_id
+  // Generate a product_id
   const productId = validated.data.product_id || `p${Date.now()}`;
-  const sellerId = `s${Math.random().toString(36).substring(2, 5)}`;
+  
+  // Get seller_id from session
+  const session = await auth();
+  const sellerId = session?.user?.id;
+
+  if (!sellerId) {
+      return {
+          ...prevState,
+          message: 'Error: You must be logged in as a seller to create a product.',
+      };
+  }
 
   let productImage = '';
 
@@ -215,8 +230,8 @@ export async function createProduct(
   // Insert data into the database
   try {
     await sql`
-      INSERT INTO public.products (product_id, price, product_name, product_description, seller_id, product_image)
-      VALUES (${productId}, ${validated.data.price}, ${validated.data.product_name}, ${validated.data.product_description}, ${sellerId}, ${productImage})
+      INSERT INTO public.products (product_id, price, product_name, product_description, seller_id, product_image, category_id)
+      VALUES (${productId}, ${validated.data.price}, ${validated.data.product_name}, ${validated.data.product_description}, ${sellerId}, ${productImage}, ${validated.data.category_id})
     `;
 
     // Revalidate the products page cache so the new product appears
@@ -355,12 +370,22 @@ export async function createUser(
   prevState: UserState,
   formData: FormData,
 ): Promise<UserState> {
-  // Validate form using Zod
-  const validated = CreateUser.safeParse({
-    user_id: formData.get('user_id') || '',
-    user_first_name: formData.get('user_first_name') || '',
-    user_last_name: formData.get('user_last_name') || '',
-    user_email: formData.get('user_email') || '',
+  // Extract user_type first to determine validation logic
+  const userType = formData.get('user_type') as string;
+
+  // Base schema for common fields
+  const baseSchema = z.object({
+    user_first_name: z.string().min(1, 'First name is required'),
+    user_last_name: z.string().min(1, 'Last name is required'),
+    user_email: z.string().email('Invalid email address'),
+    user_password: z.string().min(6, 'Password must be at least 6 characters'),
+  });
+
+  // Validate common fields
+  const validated = baseSchema.safeParse({
+    user_first_name: formData.get('user_first_name'),
+    user_last_name: formData.get('user_last_name'),
+    user_email: formData.get('user_email'),
     user_password: formData.get('user_password'),
   });
 
@@ -416,24 +441,64 @@ export async function createUser(
 
     if (createSellerAccount) {
       // Generate seller_id and insert into sellers table
-      const sellerId = `s${Math.random().toString(36).substring(2, 5)}`;
-      await sql`
-        INSERT INTO public.sellers (seller_id, seller_first_name, seller_last_name, seller_email, seller_password, seller_image)
-        VALUES (${sellerId}, ${validated.data.user_first_name}, ${validated.data.user_last_name}, ${validated.data.user_email}, ${hashedPassword}, '/sellers/default-avatar.png')
-      `;
-      return { message: 'Seller account created successfully!', errors: {} };
+      let sellerImage = '';
+      const imageFile = formData.get('seller_image') as File | null;
+
+      if (imageFile && imageFile.size > 0) {
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!validTypes.includes(imageFile.type)) {
+           // Basic error return for now, technically should probably be added to errors object
+           // but UserState errors is typed strictly to user_ fields currently.
+           // We might need to expand UserState if we want to show specific image errors nicely,
+           // or just return a generic message.
+           return { ...prevState, message: 'Invalid image type. Only JPG, PNG, WebP allowed.' };
+        }
+
+        // Validate file size (5MB)
+        if (imageFile.size > 5 * 1024 * 1024) {
+             return { ...prevState, message: 'Image size too large. Max 5MB.' };
+        }
+
+        const bytes = await imageFile.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+
+        // Upload logic
+        const uploadDir = join(process.cwd(), 'public', 'sellers');
+        await mkdir(uploadDir, { recursive: true });
+
+        const timestamp = Date.now();
+        const sellerId = `s${Math.random().toString(36).substring(2, 5)}`; // Generate ID early for filename
+        const fileExtension = imageFile.type.split('/')[1];
+        const fileName = `${sellerId}-${timestamp}.${fileExtension}`;
+        const filePath = join(uploadDir, fileName);
+
+        await writeFile(filePath, buffer);
+        sellerImage = `sellers/${fileName}`;
+
+         // Insert into Sellers
+        await sql`
+          INSERT INTO public.sellers (seller_id, seller_first_name, seller_last_name, seller_email, seller_image, seller_password)
+          VALUES (${sellerId}, ${validated.data.user_first_name}, ${validated.data.user_last_name}, ${validated.data.user_email}, ${sellerImage}, ${hashedPassword})
+        `;
+        return { message: 'Seller account created successfully!', errors: {} };
+      } else {
+         // Require image for sellers?
+          return { ...prevState, message: 'Seller image is required.' };
+      }
     } else {
       // Insert into users table
       await sql`
         INSERT INTO public.users (user_id, user_first_name, user_last_name, user_email, user_password)
         VALUES (${userId}, ${validated.data.user_first_name}, ${validated.data.user_last_name}, ${validated.data.user_email}, ${hashedPassword})
       `;
-      return { message: 'User account created successfully!', errors: {} };
     }
+
+    return { message: 'Account created successfully!', errors: {} };
   } catch (error) {
     console.log('Database Error:', error);
     return {
-      message: 'Database Error: Failed to create user',
+      message: 'Database Error: Failed to create account.',
       errors: {},
     };
   }
@@ -443,13 +508,31 @@ export async function createReview(
   prevState: reviewState,
   formData: FormData,
 ): Promise<reviewState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  const userRole = (session?.user as any)?.role;
+
+  if (!userId) {
+    return {
+      ...prevState,
+      message: 'Error: You must be logged in to review.',
+    };
+  }
+
+  if (userRole === 'seller') {
+      return {
+          ...prevState,
+          message: 'Error: Sellers cannot review products.',
+      };
+  }
+
   const validated = CreateReview.safeParse({
     review_id: formData.get('review_id') || '',
     review_text: formData.get('review_text'),
     review_date: formData.get('review_date'),
     review_rating: formData.get('review_rating'),
     seller_id: formData.get('seller_id'),
-    user_id: formData.get('user_id'),
+    user_id: userId,
     product_id: formData.get('product_id'),
   });       
 
@@ -747,6 +830,47 @@ export async function deleteAddress(addressId: string) {
   } catch (error) {
     console.error('Database Error:', error);
     throw error;
+  }
+}
+
+export async function deleteProduct(id: string) {
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  if (!userId) {
+    throw new Error('Unauthorized');
+  }
+
+  try {
+    // Verify ownership and get image path
+    const product = await sql`SELECT seller_id, product_image FROM products WHERE product_id = ${id}`;
+    
+    if (!product.length) {
+       return { message: 'Product not found' };
+    }
+
+    if (product[0].seller_id !== userId) {
+      throw new Error('Unauthorized: You can only delete your own products.');
+    }
+
+    // Delete image if exists
+    if (product[0].product_image) {
+      const imagePath = join(process.cwd(), 'public', product[0].product_image);
+      try {
+        await unlink(imagePath);
+      } catch (err) {
+        console.warn('Failed to delete image file:', err);
+      }
+    }
+
+    // Delete from database
+    await sql`DELETE FROM products WHERE product_id = ${id}`;
+    
+    revalidatePath('/products');
+    
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to delete product.');
   }
 }
 
