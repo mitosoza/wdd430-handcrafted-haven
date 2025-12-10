@@ -163,16 +163,16 @@ export async function createProduct(
 
   // Generate a product_id
   const productId = validated.data.product_id || `p${Date.now()}`;
-  
+
   // Get seller_id from session
   const session = await auth();
   const sellerId = session?.user?.id;
 
   if (!sellerId) {
-      return {
-          ...prevState,
-          message: 'Error: You must be logged in as a seller to create a product.',
-      };
+    return {
+      ...prevState,
+      message: 'Error: You must be logged in as a seller to create a product.',
+    };
   }
 
   let productImage = '';
@@ -412,8 +412,8 @@ export async function createUser(
   // Generate user_id
   const userId = `u${Math.random().toString(36).substring(2, 5)}`;
 
-  // Check if creating seller account
-  const createSellerAccount = formData.get('create_seller_account') === 'on';
+  // Use user_type selector to determine account type
+  const isSeller = userType === 'seller';
 
   try {
     // Check if email already exists in both users and sellers tables
@@ -439,62 +439,47 @@ export async function createUser(
     // Hash the password securely
     const hashedPassword = await bcrypt.hash(validated.data.user_password, 10);
 
-    if (createSellerAccount) {
-      // Generate seller_id and insert into sellers table
+    if (isSeller) {
+      // Seller account creation
       let sellerImage = '';
       const imageFile = formData.get('seller_image') as File | null;
-
       if (imageFile && imageFile.size > 0) {
         // Validate file type
         const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
         if (!validTypes.includes(imageFile.type)) {
-           // Basic error return for now, technically should probably be added to errors object
-           // but UserState errors is typed strictly to user_ fields currently.
-           // We might need to expand UserState if we want to show specific image errors nicely,
-           // or just return a generic message.
-           return { ...prevState, message: 'Invalid image type. Only JPG, PNG, WebP allowed.' };
+          return { ...prevState, message: 'Invalid image type. Only JPG, PNG, WebP allowed.' };
         }
-
         // Validate file size (5MB)
         if (imageFile.size > 5 * 1024 * 1024) {
-             return { ...prevState, message: 'Image size too large. Max 5MB.' };
+          return { ...prevState, message: 'Image size too large. Max 5MB.' };
         }
-
         const bytes = await imageFile.arrayBuffer();
         const buffer = Buffer.from(bytes);
-
-        // Upload logic
         const uploadDir = join(process.cwd(), 'public', 'sellers');
         await mkdir(uploadDir, { recursive: true });
-
         const timestamp = Date.now();
-        const sellerId = `s${Math.random().toString(36).substring(2, 5)}`; // Generate ID early for filename
+        const sellerId = `s${Math.random().toString(36).substring(2, 5)}`;
         const fileExtension = imageFile.type.split('/')[1];
         const fileName = `${sellerId}-${timestamp}.${fileExtension}`;
         const filePath = join(uploadDir, fileName);
-
         await writeFile(filePath, buffer);
         sellerImage = `sellers/${fileName}`;
-
-         // Insert into Sellers
         await sql`
           INSERT INTO public.sellers (seller_id, seller_first_name, seller_last_name, seller_email, seller_image, seller_password)
           VALUES (${sellerId}, ${validated.data.user_first_name}, ${validated.data.user_last_name}, ${validated.data.user_email}, ${sellerImage}, ${hashedPassword})
         `;
         return { message: 'Seller account created successfully!', errors: {} };
       } else {
-         // Require image for sellers?
-          return { ...prevState, message: 'Seller image is required.' };
+        return { ...prevState, message: 'Seller image is required.' };
       }
     } else {
-      // Insert into users table
+      // Buyer account creation
       await sql`
         INSERT INTO public.users (user_id, user_first_name, user_last_name, user_email, user_password)
         VALUES (${userId}, ${validated.data.user_first_name}, ${validated.data.user_last_name}, ${validated.data.user_email}, ${hashedPassword})
       `;
+      return { message: 'Account created successfully!', errors: {} };
     }
-
-    return { message: 'Account created successfully!', errors: {} };
   } catch (error) {
     console.log('Database Error:', error);
     return {
@@ -520,10 +505,10 @@ export async function createReview(
   }
 
   if (userRole === 'seller') {
-      return {
-          ...prevState,
-          message: 'Error: Sellers cannot review products.',
-      };
+    return {
+      ...prevState,
+      message: 'Error: Sellers cannot review products.',
+    };
   }
 
   const validated = CreateReview.safeParse({
@@ -534,7 +519,7 @@ export async function createReview(
     seller_id: formData.get('seller_id'),
     user_id: userId,
     product_id: formData.get('product_id'),
-  });       
+  });
 
   if (!validated.success) {
     const fieldErrors = validated.error.format();
@@ -844,9 +829,9 @@ export async function deleteProduct(id: string) {
   try {
     // Verify ownership and get image path
     const product = await sql`SELECT seller_id, product_image FROM products WHERE product_id = ${id}`;
-    
+
     if (!product.length) {
-       return { message: 'Product not found' };
+      return { message: 'Product not found' };
     }
 
     if (product[0].seller_id !== userId) {
@@ -865,9 +850,9 @@ export async function deleteProduct(id: string) {
 
     // Delete from database
     await sql`DELETE FROM products WHERE product_id = ${id}`;
-    
+
     revalidatePath('/products');
-    
+
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to delete product.');

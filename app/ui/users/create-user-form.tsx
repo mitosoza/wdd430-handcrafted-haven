@@ -151,24 +151,6 @@ export default function UserForm() {
         )}
       </div>
 
-      {/* Create Seller Account Checkbox */}
-      <div className="mb-6">
-        <div className="flex items-center">
-          <input
-            id="create_seller_account"
-            name="create_seller_account"
-            type="checkbox"
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <label
-            htmlFor="create_seller_account"
-            className="ml-2 block text-sm text-gray-900"
-          >
-            Create seller account (allows you to sell products)
-          </label>
-        </div>
-      </div>
-
       {/* Form Actions */}
       <div className="flex gap-4">
         <Button

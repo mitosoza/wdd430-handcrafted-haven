@@ -10,7 +10,6 @@ import { ArrowRightIcon } from '@heroicons/react/20/solid';
 import { Button } from './button';
 import { useActionState } from 'react';
 import { authenticate } from '@/app/lib/actions';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -90,12 +89,6 @@ export default function LoginForm() {
               <p className="text-sm text-red-500">{errorMessage}</p>
             </>
           )}
-        </div>
-        <div className="text-center text-sm text-gray-500 mt-4">
-          Don&apos;t have an account?{' '}
-          <Link href="/user/create" className="text-blue-500 hover:text-blue-600">
-            Register
-          </Link>
         </div>
       </div>
     </form>
