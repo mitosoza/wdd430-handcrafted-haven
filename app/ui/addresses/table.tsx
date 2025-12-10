@@ -23,13 +23,14 @@ export default function AddressesTable({
                                     <div className="flex items-center justify-between border-b pb-4">
                                         <div>
                                             <div className="mb-2 flex items-center">
-                                                <p className="text-sm font-medium">{address.street_address_1}</p>
+                                                <p className="text-sm font-medium">{address.first_name} {address.last_name}</p>
                                                 {address.is_default && (
                                                     <span className="ml-2 inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                                                         Default
                                                     </span>
                                                 )}
                                             </div>
+                                            <p className="text-sm font-medium">{address.street_address_1}</p>
                                             {address.street_address_2 && (
                                                 <p className="text-sm text-gray-500">{address.street_address_2}</p>
                                             )}
@@ -49,6 +50,9 @@ export default function AddressesTable({
                         <thead className="rounded-lg text-left text-sm font-normal">
                             <tr>
                                 <th scope="col" className="px-4 py-5 font-medium sm:pl-6">
+                                    Name
+                                </th>
+                                <th scope="col" className="px-4 py-5 font-medium">
                                     Address
                                 </th>
                                 <th scope="col" className="px-3 py-5 font-medium">
@@ -71,7 +75,7 @@ export default function AddressesTable({
                         <tbody className="bg-white">
                             {addresses.length === 0 ? (
                                 <tr className="w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg">
-                                    <td colSpan={6} className="whitespace-nowrap px-6 py-3 text-center text-gray-500">
+                                    <td colSpan={7} className="whitespace-nowrap px-6 py-3 text-center text-gray-500">
                                         No addresses found.
                                     </td>
                                 </tr>
@@ -81,6 +85,9 @@ export default function AddressesTable({
                                         key={address.address_id}
                                         className="w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
                                     >
+                                        <td className="whitespace-nowrap py-3 pl-6 pr-3 font-medium">
+                                            {address.first_name} {address.last_name}
+                                        </td>
                                         <td className="whitespace-nowrap py-3 pl-6 pr-3">
                                             <div className="flex flex-col">
                                                 <p className="font-medium">{address.street_address_1}</p>

@@ -50,7 +50,7 @@ export type Order = {
   order_date: string;
   order_status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   total_amount: string;
-  shipping_address: string;
+  shipping_address_id: string;
   created_at: string;
   updated_at: string;
 }
@@ -77,6 +77,8 @@ export type Address = {
   country: string;
   created_at: string;
   updated_at: string;
+  first_name: string;
+  last_name: string;
 }
 
 export type Revenue = {

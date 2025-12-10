@@ -56,8 +56,21 @@ const addressFormSchema = z.object({
   state_province: z.string().min(1, 'State/Province is required'),
   postal_code: z.string().min(1, 'Postal code is required'),
   country: z.string().min(1, 'Country is required'),
-  is_default: z.boolean().optional()
+  is_default: z.boolean().optional(),
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required')
 })
+
+const orderSchema = z.object({
+  total_amount: z.string().min(1, 'Total amount is required'),
+  shipping_address_id: z.string().min(1, 'Shipping address is required'),
+  cart_items: z.array(z.object({
+    product_id: z.string(),
+    quantity: z.number().min(1),
+    unit_price: z.string(),
+    seller_id: z.string().optional()
+  })).min(1, 'Cart cannot be empty')
+});
 
 export type State = {
   errors?: {
@@ -97,6 +110,8 @@ export type AddressState = {
     postal_code?: string[];
     country?: string[];
     is_default?: string[];
+    first_name?: string[];
+    last_name?: string[];
   };
   message?: string | null;
   fieldValues?: {
@@ -106,6 +121,8 @@ export type AddressState = {
     state_province?: string;
     postal_code?: string;
     country?: string;
+    first_name?: string;
+    last_name?: string;
   };
 }
 export type reviewState ={
@@ -569,13 +586,15 @@ export async function createAddress(
 
   // Validate form using Zod
   const validated = CreateAddress.safeParse({
-    street_address_1: formData.get('address_line_1') || '',
-    street_address_2: formData.get('address_line_2') || '',
+    street_address_1: formData.get('street_address_1') || '',
+    street_address_2: formData.get('street_address_2') || '',
     city: formData.get('city') || '',
     state_province: formData.get('state_province') || '',
     postal_code: formData.get('postal_code') || '',
     country: formData.get('country') || '',
     is_default: formData.get('is_default') === 'on',
+    first_name: formData.get('first_name') || '',
+    last_name: formData.get('last_name') || '',
   });
 
   if (!validated.success) {
@@ -591,12 +610,14 @@ export async function createAddress(
       ...prevState,
       errors,
       fieldValues: {
-        street_address_1: formData.get('address_line_1') as string || '',
-        street_address_2: formData.get('address_line_2') as string || '',
+        street_address_1: formData.get('street_address_1') as string || '',
+        street_address_2: formData.get('street_address_2') as string || '',
         city: formData.get('city') as string || '',
         state_province: formData.get('state_province') as string || '',
         postal_code: formData.get('postal_code') as string || '',
         country: formData.get('country') as string || '',
+        first_name: formData.get('first_name') as string || '',
+        last_name: formData.get('last_name') as string || '',
       }
     };
   }
@@ -630,13 +651,14 @@ export async function createAddress(
     await sql`
       INSERT INTO public.addresses (
         address_id, user_id, street_address_1, street_address_2, 
-        city, state_province, postal_code, country, is_default
+        city, state_province, postal_code, country, is_default, first_name, last_name
       )
       VALUES (
         ${addressId}, ${userId}, ${validated.data.street_address_1}, 
         ${validated.data.street_address_2 || null}, ${validated.data.city}, 
         ${validated.data.state_province}, ${validated.data.postal_code}, 
-        ${validated.data.country}, ${validated.data.is_default || false}
+        ${validated.data.country}, ${validated.data.is_default || false}, 
+        ${validated.data.first_name}, ${validated.data.last_name}
       )
     `;
 
@@ -675,13 +697,15 @@ export async function updateAddress(
 
   // Validate form using Zod
   const validated = CreateAddress.safeParse({
-    street_address_1: formData.get('address_line_1') || '',
-    street_address_2: formData.get('address_line_2') || '',
+    street_address_1: formData.get('street_address_1') || '',
+    street_address_2: formData.get('street_address_2') || '',
     city: formData.get('city') || '',
     state_province: formData.get('state_province') || '',
     postal_code: formData.get('postal_code') || '',
     country: formData.get('country') || '',
     is_default: formData.get('is_default') === 'on',
+    first_name: formData.get('first_name') || '',
+    last_name: formData.get('last_name') || '',
   });
 
   if (!validated.success) {
@@ -697,12 +721,14 @@ export async function updateAddress(
       ...prevState,
       errors,
       fieldValues: {
-        street_address_1: formData.get('address_line_1') as string || '',
-        street_address_2: formData.get('address_line_2') as string || '',
+        street_address_1: formData.get('street_address_1') as string || '',
+        street_address_2: formData.get('street_address_2') as string || '',
         city: formData.get('city') as string || '',
         state_province: formData.get('state_province') as string || '',
         postal_code: formData.get('postal_code') as string || '',
         country: formData.get('country') as string || '',
+        first_name: formData.get('first_name') as string || '',
+        last_name: formData.get('last_name') as string || '',
       }
     };
   }
@@ -755,6 +781,8 @@ export async function updateAddress(
         postal_code = ${validated.data.postal_code},
         country = ${validated.data.country},
         is_default = ${validated.data.is_default || false},
+        first_name = ${validated.data.first_name},
+        last_name = ${validated.data.last_name},
         updated_at = NOW()
       WHERE address_id = ${addressId} AND user_id = ${userId}
     `;
@@ -856,6 +884,157 @@ export async function deleteProduct(id: string) {
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to delete product.');
+  }
+}
+
+export type CartState = {
+  message?: string | null;
+  errors?: {};
+}
+
+export type OrderState = {
+  message?: string | null;
+  errors?: {
+    user_id?: string[];
+    total_amount?: string[];
+    shipping_address_id?: string[];
+    cart_items?: string[];
+    general?: string[];
+  };
+}
+
+export async function addToCart(
+  prevState: CartState,
+  formData: FormData,
+): Promise<CartState> {
+
+  const productName = formData.get('productName') as string;
+  const quantity = formData.get('quantity') as string;
+
+  return {
+    message: `${quantity} x ${productName} added successfully to cart!`,
+    errors: {}
+  };
+}
+
+export async function createOrder(
+  prevState: OrderState,
+  formData: FormData,
+): Promise<OrderState> {
+
+  const rawFormData = {
+    total_amount: formData.get('total_amount') as string,
+    shipping_address_id: formData.get('shipping_address_id') as string,
+    cart_items: JSON.parse(formData.get('cart_items') as string || '[]')
+  };
+  console.log('Raw Form Data:', rawFormData);
+  const validatedFields = orderSchema.safeParse(rawFormData);
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing or invalid fields. Failed to create order.',
+    };
+  }
+
+  const { total_amount, shipping_address_id, cart_items } = validatedFields.data;
+  console.log('Validated Total:', total_amount);
+  try {
+    const { auth } = await import('@/auth');
+    const session = await auth();
+
+    if (!session?.user?.email || !session?.user?.role) {
+      return {
+        message: 'You must be logged in to place an order.',
+        errors: { general: ['Please log in to continue.'] }
+      };
+    }
+
+    let actualUserId: string;
+
+    if (session.user.role === 'user') {
+      const userResult = await sql`
+        SELECT user_id FROM users WHERE user_email = ${session.user.email}
+      `;
+
+      if (userResult.length === 0) {
+        return {
+          message: 'User account not found.',
+          errors: { general: ['Please create an account to place orders.'] }
+        };
+      }
+
+      actualUserId = userResult[0].user_id;
+    } else if (session.user.role === 'seller') {
+      const sellerResult = await sql`
+        SELECT seller_id FROM sellers WHERE seller_email = ${session.user.email}
+      `;
+
+      if (sellerResult.length === 0) {
+        return {
+          message: 'Seller account not found.',
+          errors: { general: ['Please create an account to place orders.'] }
+        };
+      }
+
+      actualUserId = sellerResult[0].seller_id;
+    } else {
+      return {
+        message: 'Invalid account type.',
+        errors: { general: ['Unable to determine account type.'] }
+      };
+    }
+
+    await sql.begin(async sql => {
+      console.log('Actual User ID:', actualUserId);
+      console.log('Provided Shipping Address ID:', shipping_address_id);
+      const existingAddress = await sql`
+        SELECT address_id FROM addresses WHERE address_id = ${shipping_address_id} AND user_id = ${actualUserId}
+      `;
+
+      if (existingAddress.length === 0) {
+        throw new Error('Invalid shipping address. Please select a valid address.');
+      }
+
+      const orderId = crypto.randomUUID();
+
+      await sql`
+        INSERT INTO orders (order_id, user_id, order_date, order_status, total_amount, shipping_address_id, created_at, updated_at)
+        VALUES (${orderId}, ${actualUserId}, NOW(), 'pending', ${total_amount}, ${shipping_address_id}, NOW(), NOW())
+      `;
+      for (const item of cart_items) {
+        const orderItemId = crypto.randomUUID();
+        const totalPrice = (parseFloat(item.unit_price) * item.quantity).toString();
+
+        const productResult = await sql`
+          SELECT seller_id FROM products WHERE product_id = ${item.product_id}
+        `;
+
+        const sellerId = productResult[0]?.seller_id;
+
+        if (!sellerId) {
+          throw new Error(`Product ${item.product_id} not found or has no seller`);
+        }
+
+        await sql`
+          INSERT INTO order_items (order_item_id, order_id, product_id, seller_id, quantity, unit_price, total_price)
+          VALUES (${orderItemId}, ${orderId}, ${item.product_id}, ${sellerId}, ${item.quantity}, ${item.unit_price}, ${totalPrice})
+        `;
+      }
+    });
+
+    revalidatePath('/dashboard/orders');
+    return {
+      message: 'Order placed successfully! Thank you for your purchase.',
+      errors: {}
+    };
+
+  } catch (error) {
+    console.error('Database Error:', error);
+    return {
+      message: 'Database Error: Failed to create order.',
+      errors: { general: ['Failed to create order. Please try again.'] }
+    };
   }
 }
 

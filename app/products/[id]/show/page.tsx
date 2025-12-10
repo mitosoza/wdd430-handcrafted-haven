@@ -6,6 +6,7 @@ import Link from 'next/link';
 import fs from 'fs';
 import path from 'path';
 import Header from '@/app/ui/header';
+import ProductCartWrapper from '@/app/ui/products/product-cart-wrapper';
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -55,7 +56,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     <main className="min-h-screen landing-page-gradient">
       <Header />
       <div className="p-6">
-        <div className="max-w-5xl mx-auto rounded-xl bg-white p-6 shadow-md">
+        <ProductCartWrapper
+          productId={product.id}
+          productName={product.product_name}
+          price={product.price}
+          productImage={productImage}
+        >
           <div className="flex flex-col md:flex-row gap-6">
             <div className="md:w-1/2 flex items-center justify-center">
               <div className="w-64 h-64 rounded-lg bg-gray-50 p-4 shadow-sm flex items-center justify-center">
@@ -67,11 +73,15 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               <h1 className="text-2xl font-semibold">{product.product_name}</h1>
               <p className="mt-4 text-gray-700">{product.product_description}</p>
 
-              <div className="mt-6 flex items-center gap-4">
-                <span className="rounded-full bg-gray-100 px-4 py-2 text-lg font-semibold">{formatCurrency(Number(product.price))}</span>
-                <button className="rounded-full bg-cyan-200/50 px-8 py-3 text-gray-900 font-semibold hover:bg-cyan-200 transition-colors">Add to cart</button>
-                <Link href="/products" className="text-sm text-gray-600 underline">Back to products</Link>
-                <Link className="text-sm text-gray-600 underline" href={`/products/${id}/reviews`}>Reviews</Link>
+              <div className="mt-6 space-y-4">
+                <div className="flex items-center gap-4">
+                  <span className="rounded-full bg-gray-100 px-4 py-2 text-lg font-semibold">{formatCurrency(Number(product.price))}</span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <Link href="/products" className="text-sm text-gray-600 underline">Back to products</Link>
+                  <Link className="text-sm text-gray-600 underline" href={`/products/${id}/reviews`}>Reviews</Link>
+                </div>
               </div>
 
               {seller ? (
@@ -110,7 +120,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               }
             </div>
           </div>
-        </div>
+        </ProductCartWrapper>
       </div>
     </main>
   );
