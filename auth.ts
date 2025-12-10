@@ -54,11 +54,17 @@ export const { auth, signIn, signOut } = NextAuth({
       if (user && 'role' in user) {
         token.role = user.role as 'user' | 'seller';
       }
+      if (user && 'id' in user) {
+        token.id = user.id;
+      }
       return token;
     },
     async session({ session, token }) {
       if (token && token.role && (token.role === 'user' || token.role === 'seller')) {
         session.user.role = token.role;
+      }
+      if (token && token.id) {
+        session.user.id = token.id as string;
       }
       return session;
     },

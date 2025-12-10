@@ -19,7 +19,8 @@ export default function CreateAddressForm({ address }: { address?: Address }) {
     const [state, formAction] = useActionState<AddressState, FormData>(
         updateAddressWithId,
         initialState,
-    ); return (
+    );
+    return (
         <form
             action={formAction}
             className="rounded-lg bg-gray-50 px-6 pb-4 pt-8 ring-gray-300 shadow-[0_0_15px_rgba(0,0,0,0.1)]"
@@ -33,18 +34,62 @@ export default function CreateAddressForm({ address }: { address?: Address }) {
             <h1 className={`${lusitana.className} mb-3 text-2xl text-center font-bold`}>
                 {isEditing ? 'Edit Address' : 'Create New Address'}
             </h1>
+            <div className="mb-4">
+                <label
+                    htmlFor="first_name"
+                    className="mb-2 block text-sm font-semibold text-gray-900"
+                >
+                    First Name *
+                </label>
+                <input
+                    id="first_name"
+                    name="first_name"
+                    type="text"
+                    placeholder="e.g., John"
+                    defaultValue={state?.fieldValues?.first_name || address?.first_name || ''}
+                    required
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+                {state?.errors?.first_name && (
+                    <p className="mt-1 text-sm text-red-600">
+                        {state.errors.first_name.join(', ')}
+                    </p>
+                )}
+            </div>
+            <div className="mb-4">
+                <label
+                    htmlFor="last_name"
+                    className="mb-2 block text-sm font-semibold text-gray-900"
+                >
+                    Last Name *
+                </label>
+                <input
+                    id="last_name"
+                    name="last_name"
+                    type="text"
+                    placeholder="e.g., Doe"
+                    defaultValue={state?.fieldValues?.last_name || address?.last_name || ''}
+                    required
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+                {state?.errors?.last_name && (
+                    <p className="mt-1 text-sm text-red-600">
+                        {state.errors.last_name.join(', ')}
+                    </p>
+                )}
+            </div>
 
             {/* Address Line 1 */}
             <div className="mb-4">
                 <label
-                    htmlFor="address_line_1"
+                    htmlFor="street_address_1"
                     className="mb-2 block text-sm font-semibold text-gray-900"
                 >
                     Address Line 1 *
                 </label>
                 <input
-                    id="address_line_1"
-                    name="address_line_1"
+                    id="street_address_1"
+                    name="street_address_1"
                     type="text"
                     placeholder="e.g., 123 Main Street"
                     defaultValue={state?.fieldValues?.street_address_1 || address?.street_address_1 || ''}
@@ -61,14 +106,14 @@ export default function CreateAddressForm({ address }: { address?: Address }) {
             {/* Address Line 2 */}
             <div className="mb-4">
                 <label
-                    htmlFor="address_line_2"
+                    htmlFor="street_address_2"
                     className="mb-2 block text-sm font-semibold text-gray-900"
                 >
                     Address Line 2
                 </label>
                 <input
-                    id="address_line_2"
-                    name="address_line_2"
+                    id="street_address_2"
+                    name="street_address_2"
                     type="text"
                     placeholder="e.g., Apartment, suite, etc. (optional)"
                     defaultValue={state?.fieldValues?.street_address_2 || address?.street_address_2 || ''}
