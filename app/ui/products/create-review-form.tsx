@@ -6,8 +6,10 @@ import { Button } from '@/app/ui/button';
 import Link from 'next/link';
 import { Product, Seller } from '@/app/lib/definitions';
 
-export default function Form(props: { product: Product; seller: Seller }) {
-    const { product, seller } = props; 
+import { User } from 'next-auth';
+
+export default function Form(props: { product: Product; seller: Seller, user: User | undefined }) {
+    const { product, seller, user } = props; 
     const initialState: reviewState = { message: null, errors: {} };
 
     const [state, formAction] = useActionState<reviewState, FormData>(
@@ -30,7 +32,7 @@ export default function Form(props: { product: Product; seller: Seller }) {
             <input type="hidden" name="review_id" value="" />
             <input type="hidden" name="product_id" value={product.id} />
             <input type="hidden" name="seller_id" value={seller.seller_id} />
-            <input type="hidden" name="user_id" value='u004' />
+            <input type="hidden" name="user_id" value={user?.id ?? ''} />
 
             {/* Review Text */}
             <div className="mb-4">

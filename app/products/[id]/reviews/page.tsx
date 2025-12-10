@@ -3,23 +3,44 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Metadata } from "next";
 import Header from '@/app/ui/header';
+import { PlusIcon } from "@heroicons/react/24/outline";
 
 export const metadata: Metadata = { title: "Product Reviews", };
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  
   // Fetch product and reviews in parallel 
-  const [product, reviews] = await Promise.all([fetchProductById(id).catch(() => null), fetchReviewsByProductId(id).catch(() => []),]);
+  const [product, reviews] = await Promise.all([
+    fetchProductById(id).catch(() => null),
+    fetchReviewsByProductId(id).catch(() => []),
+  ]);
 
   if (!product) { notFound(); }
+
   return (
     <main className="min-h-screen landing-page-gradient">
       <Header />
       <div className="p-6">
         <div className="max-w-4xl mx-auto">
           {/* Header with product info */}
-          <div className="mb-8"> <Link href={`/products/${id}/show
-`} className="text-blue-600 hover:underline mb-4 inline-block"> ← Back to product </Link> <h1 className="text-3xl font-semibold text-gray-900">{product.product_name}</h1> <p className="text-gray-600 mt-2">Reviews ({reviews.length})</p> </div>
+          <div className="mb-8 flex items-end justify-between">
+              <div>
+                  <Link href={`/products/${id}/show`} className="text-blue-600 hover:underline mb-4 inline-block">
+                      ← Back to product
+                  </Link>
+                  <h1 className="text-3xl font-semibold text-gray-900">{product.product_name}</h1>
+                  <p className="text-gray-600 mt-2">Reviews ({reviews.length})</p>
+              </div>
+              <Link
+                  href={`/products/${id}/reviews/create`}
+                  className="flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+              >
+                  <span className="hidden md:block">Write a Review</span>
+                  <PlusIcon className="h-5 w-5 md:ml-4" />
+              </Link>
+          </div>
+
           {/* Reviews Section */}
           <div className="bg-white rounded-lg shadow-md p-6">
             {reviews.length === 0 ? (
@@ -30,7 +51,6 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             ) : (
               <div className="space-y-6">
                 {reviews.map((review) => (
-
                   <div key={review.review_id} className="border-b pb-6 last:border-b-0">
                     {/* Review Header */}
                     <div className="flex items-start justify-between mb-3">
@@ -80,4 +100,3 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     </main>
   );
 }
-

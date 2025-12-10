@@ -208,6 +208,27 @@ export async function fetchCategoryById(id: string): Promise<Category> {
   }
 }
 
+export async function fetchCategories(): Promise<Category[]> {
+  try {
+    const rows = await sql`
+      SELECT category_id, category_name, category_image
+      FROM public.categories
+      ORDER BY category_name ASC
+    `;
+
+    const categories: Category[] = rows.map((row: any) => ({
+      category_id: row.category_id ?? '',
+      category_name: row.category_name ?? '',
+      category_image: row.category_image ?? '',
+    }));
+
+    return categories;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch categories');
+  }
+}
+
 export async function fetchProductsByCategoryId(id: string): Promise<Product[]> {
   try {
     const rows = await sql`

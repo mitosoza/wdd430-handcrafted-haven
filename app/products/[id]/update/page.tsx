@@ -1,14 +1,20 @@
 import EditProductForm from "@/app/ui/products/edit-product-form";
 import { Metadata } from "next";
 import { fetchProductById, fetchSellers } from "@/app/lib/data";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { auth } from "@/auth";
 
 export const metadata: Metadata = {
   title: "Update Product",
 };
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  if ((session?.user as any)?.role !== 'seller') {
+      redirect('/dashboard');
+  }
+
   const { id } = await params;
 
   // Fetch product and sellers
@@ -19,6 +25,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   if (!product) {
     notFound();
+  }
+
+  if (product.seller_id !== session?.user?.id) {
+    redirect('/dashboard');
   }
 
   return (
