@@ -32,7 +32,7 @@ const baseLinks = [
 const sellerLinks = [
   {
     name: 'My Products',
-    href: '/dashboard/inventory',
+    href: '/dashboard/products',
     icon: Squares2X2Icon,
   },
   {

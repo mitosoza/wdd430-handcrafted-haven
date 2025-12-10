@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useActionState } from 'react';
+import { useActionState } from 'react';
 import { addToCart, CartState } from '@/app/lib/actions';
 import AddToCartForm from '@/app/ui/products/add-to-cart-form';
 
@@ -42,7 +42,6 @@ export default function ProductCartWrapper({
                     productName={productName}
                     price={price}
                     productImage={productImage}
-                    cartState={state}
                     onAddToCart={formAction}
                 />
             </div>

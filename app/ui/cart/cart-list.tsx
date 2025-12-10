@@ -8,8 +8,6 @@ import {
 import ImageWithFallback from '@/app/ui/products/image-with-fallback';
 import { formatCurrency } from '@/app/lib/utils';
 import Link from 'next/link';
-import CheckoutForm from '../checkout/checkout-form';
-
 interface CartItem {
   productId: string;
   quantity: number;
@@ -159,7 +157,7 @@ export default function CartList() {
           </Link>
           <Link
             href="/checkout"
-            className="flex-1 bg-cyan-600 text-white px-6 py-3 rounded-lg hover:bg-cyan-700 transition-colors"
+            className="flex-1 bg-cyan-600 text-white px-6 py-3 rounded-lg text-center hover:bg-cyan-700 transition-colors"
           >
             Proceed to Checkout
           </Link>

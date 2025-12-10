@@ -26,14 +26,17 @@ export default async function Page(props: {
     const totalPages = 1;
 
     const session = await auth();
-    let userId = null;
-    if (session?.user?.id) {
-        userId = session.user.id;
+    let userEmail = null;
+    if (session?.user?.email) {
+        userEmail = session.user.email;
     }
-
+    console.log('Session:', session);
+    console.log('User Email:', userEmail);
     let orders: Order[] = [];
-    if (userId) {
-        orders = await fetchOrdersForUser(userId);
+    if (userEmail && typeof userEmail === 'string' && userEmail.trim() !== '') {
+        orders = await fetchOrdersForUser(userEmail);
+    } else {
+        orders = [];
     }
 
     return (
