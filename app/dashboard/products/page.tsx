@@ -44,7 +44,7 @@ export default async function Page() {
                             <ImageWithFallback src={`/${product.product_image}`} alt={product.product_name} className="h-40 w-full object-cover rounded mb-4" />
                             <h2 className="font-semibold text-lg mb-2">{product.product_name}</h2>
                             <p className="text-gray-600 mb-2">{product.product_description}</p>
-                            <div className="text-blue-700 font-bold mb-2">${'{'}parseFloat(product.price)/100{'}'}.00</div>
+                            <div className="text-blue-700 font-bold mb-2">${(parseFloat(product.price)/100).toFixed(2)}</div>
                             <Link href={`/products/${product.id}/update`} className="text-blue-600 hover:underline text-sm">Edit</Link>
                         </div>
                     ))

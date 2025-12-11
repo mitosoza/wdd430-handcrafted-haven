@@ -1,12 +1,14 @@
 import { notFound } from 'next/navigation';
 import { fetchProductById, fetchSellerById, fetchCategoryById } from '@/app/lib/data';
 import ImageWithFallback from '@/app/ui/products/image-with-fallback';
-import { formatCurrency } from '@/app/lib/utils';
+import { formatCurrency, calculateAverageRating } from '@/app/lib/utils';
 import Link from 'next/link';
 import fs from 'fs';
 import path from 'path';
 import Header from '@/app/ui/header';
 import ProductCartWrapper from '@/app/ui/products/product-cart-wrapper';
+import StarRating from '@/app/ui/star-rating';
+import { fetchReviewsByProductId } from '@/app/lib/data';
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,6 +21,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const seller = product.seller_id ? await fetchSellerById(product.seller_id) : null;
   const category = product.category_id ? await
     fetchCategoryById(product.category_id) : null;
+  const reviews = await fetchReviewsByProductId(id);
+  const averageRating = calculateAverageRating(reviews);
 
   // Resolve product image so the client receives an absolute public path.
   const resolveImage = (imgCandidateRaw?: string) => {
@@ -76,6 +80,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               <div className="mt-6 space-y-4">
                 <div className="flex items-center gap-4">
                   <span className="rounded-full bg-gray-100 px-4 py-2 text-lg font-semibold">{formatCurrency(Number(product.price))}</span>
+                  {reviews.length > 0 && <StarRating rating={averageRating} />}
                 </div>
 
                 <div className="flex items-center gap-4">
