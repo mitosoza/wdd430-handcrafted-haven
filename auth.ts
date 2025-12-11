@@ -60,8 +60,23 @@ export const { auth, signIn, signOut } = NextAuth({
       return token;
     },
     async session({ session, token }) {
+      let name = session.user.name;
+      let role: 'user' | 'seller' | undefined = undefined;
+      if (session.user.email) {
+        const { user, seller, userType } = await getUserOrSeller(session.user.email);
+        if (user) {
+          name = `${user.user_first_name} ${user.user_last_name}`;
+          role = 'user';
+        } else if (seller) {
+          name = `${seller.seller_first_name} ${seller.seller_last_name}`;
+          role = 'seller';
+        }
+      }
+      session.user.name = name;
       if (token && token.role && (token.role === 'user' || token.role === 'seller')) {
         session.user.role = token.role;
+      } else if (role) {
+        session.user.role = role;
       }
       if (token && token.id) {
         session.user.id = token.id as string;

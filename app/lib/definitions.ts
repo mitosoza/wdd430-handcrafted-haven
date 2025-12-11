@@ -94,3 +94,12 @@ export type LatestInvoice = {
   email: string;
   amount: string;
 };
+
+export type Account = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  password: string;
+  profile_image: string;
+};

@@ -32,7 +32,7 @@ export async function fetchOrdersForUser(userEmail: string): Promise<Order[]> {
 
 import postgres from 'postgres';
 import {
-  Product, Seller, User, Review, Category, Address, Order
+  Product, Seller, User, Review, Category, Address, Order, Account
 } from './definitions';
 
 const sql = postgres(process.env.POSTGRES_URL || '', { ssl: 'require' });
@@ -400,5 +400,43 @@ export async function fetchAddressById(addressId: string, userEmail: string): Pr
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch address');
+  }
+}
+
+export async function fetchAccountByEmail(email: string, role: 'user' | 'seller'): Promise<Account | null> {
+  try {
+    let rows;
+    if (role === 'seller') {
+      rows = await sql`
+        SELECT seller_id as id, seller_first_name as first_name, seller_last_name as last_name, seller_email as email, seller_image as profile_image
+        FROM public.sellers
+        WHERE seller_email = ${email}
+        LIMIT 1
+      `;
+    } else {
+      rows = await sql`
+        SELECT user_id as id, user_first_name as first_name, user_last_name as last_name, user_email as email, NULL as profile_image
+        FROM public.users
+        WHERE user_email = ${email}
+        LIMIT 1
+      `;
+    }
+
+    const row = rows && rows[0];
+    if (!row) return null;
+
+    const account: Account = {
+      id: row.id,
+      first_name: row.first_name,
+      last_name: row.last_name,
+      email: row.email,
+      profile_image: row.profile_image,
+      password: ''
+    };
+
+    return account;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch account by email');
   }
 }

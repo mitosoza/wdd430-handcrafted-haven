@@ -2,6 +2,7 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import postgres from 'postgres';
 import { signIn, auth } from '@/auth';
 import { AuthError } from 'next-auth';
@@ -1091,5 +1092,275 @@ export async function authenticate(
       }
     }
     throw error;
+  }
+}
+
+export async function updateUserAccount(
+  prevState: UserState,
+  formData: FormData,
+): Promise<UserState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return {
+      ...prevState,
+      message: 'You must be logged in to update your account.',
+      errors: {},
+    };
+  }
+  console.log('**** Updating account for user ID:', userId);
+
+  const baseSchema = z.object({
+    user_first_name: z.string().min(1, 'First name is required'),
+    user_last_name: z.string().min(1, 'Last name is required'),
+    user_email: z.string().email('Invalid email address'),
+    user_password: z.string().optional(),
+  });
+  const validated = baseSchema.safeParse({
+    user_first_name: formData.get('user_first_name'),
+    user_last_name: formData.get('user_last_name'),
+    user_email: formData.get('user_email'),
+    user_password: formData.get('user_password'),
+  });
+  if (!validated.success) {
+    const fieldErrors = validated.error.format();
+    const errors: UserState['errors'] = {};
+    for (const key of Object.keys(fieldErrors)) {
+      const val = (fieldErrors as any)[key];
+      if (val && typeof val === 'object' && Array.isArray(val._errors)) {
+        (errors as any)[key] = val._errors as string[];
+      }
+    }
+    return {
+      ...prevState,
+      errors,
+      fieldValues: {
+        user_first_name: formData.get('user_first_name') as string || '',
+        user_last_name: formData.get('user_last_name') as string || '',
+        user_email: formData.get('user_email') as string || '',
+      }
+    };
+  }
+
+  try {
+    const email = validated.data.user_email;
+    const currentUserResult = await sql`
+      SELECT user_email FROM public.users WHERE user_id = ${userId}
+    `;
+    const currentEmail = currentUserResult[0]?.user_email;
+    if (email !== currentEmail) {
+      const existingUser = await sql`
+        SELECT user_id FROM public.users WHERE user_email = ${email}
+      `;
+      const existingSeller = await sql`
+        SELECT seller_id FROM public.sellers WHERE seller_email = ${email}
+      `;
+      if (existingUser.length > 0 || existingSeller.length > 0) {
+        return {
+          ...prevState,
+          errors: { user_email: ['Email already exists. Please use a different email address.'] },
+          fieldValues: {
+            user_first_name: validated.data.user_first_name,
+            user_last_name: validated.data.user_last_name,
+            user_email: validated.data.user_email,
+          }
+        };
+      }
+    }
+
+    let hashedPassword: string | undefined = undefined;
+    if (validated.data.user_password && validated.data.user_password.length > 0) {
+      const currentUserPasswordResult = await sql`
+        SELECT user_password FROM public.users WHERE user_id = ${userId}
+      `;
+      const currentPassword = currentUserPasswordResult[0]?.user_password;
+      const passwordsDiffer = currentPassword && !(await bcrypt.compare(validated.data.user_password, currentPassword));
+      if (passwordsDiffer) {
+        hashedPassword = await bcrypt.hash(validated.data.user_password, 10);
+      }
+    }
+
+    await sql`
+      UPDATE public.users SET
+        user_first_name = ${validated.data.user_first_name},
+        user_last_name = ${validated.data.user_last_name},
+        user_email = ${validated.data.user_email}
+        ${hashedPassword ? sql`, user_password = ${hashedPassword}` : sql``}
+      WHERE user_id = ${userId}
+    `;
+
+    revalidatePath('/dashboard/account');
+    redirect('/dashboard');
+  } catch (error) {
+    if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+      throw error;
+    }
+    let errorMsg = 'Database Error: Failed to update account.';
+    if (error instanceof Error) {
+      errorMsg += ` ${error.message}`;
+    } else if (typeof error === 'string') {
+      errorMsg += ` ${error}`;
+    }
+    return {
+      message: errorMsg,
+      errors: {},
+      fieldValues: {
+        user_first_name: validated.data.user_first_name,
+        user_last_name: validated.data.user_last_name,
+        user_email: validated.data.user_email,
+      }
+    };
+  }
+}
+
+export async function updateSellerAccount(
+  prevState: UserState,
+  formData: FormData,
+): Promise<UserState> {
+  const session = await auth();
+  const sellerId = session?.user?.id;
+  if (!sellerId) {
+    return {
+      ...prevState,
+      message: 'You must be logged in to update your account.',
+      errors: {},
+    };
+  }
+
+  const baseSchema = z.object({
+    user_first_name: z.string().min(1, 'First name is required'),
+    user_last_name: z.string().min(1, 'Last name is required'),
+    user_email: z.string().email('Invalid email address'),
+    user_password: z.string().optional(),
+  });
+  const validated = baseSchema.safeParse({
+    user_first_name: formData.get('user_first_name'),
+    user_last_name: formData.get('user_last_name'),
+    user_email: formData.get('user_email'),
+    user_password: formData.get('user_password'),
+  });
+  if (!validated.success) {
+    const fieldErrors = validated.error.format();
+    const errors: UserState['errors'] = {};
+    for (const key of Object.keys(fieldErrors)) {
+      const val = (fieldErrors as any)[key];
+      if (val && typeof val === 'object' && Array.isArray(val._errors)) {
+        (errors as any)[key] = val._errors as string[];
+      }
+    }
+    return {
+      ...prevState,
+      errors,
+      fieldValues: {
+        user_first_name: formData.get('user_first_name') as string || '',
+        user_last_name: formData.get('user_last_name') as string || '',
+        user_email: formData.get('user_email') as string || '',
+      }
+    };
+  }
+
+  try {
+    const email = validated.data.user_email;
+    const currentSellerResult = await sql`
+      SELECT seller_email FROM public.sellers WHERE seller_id = ${sellerId}
+    `;
+    const currentEmail = currentSellerResult[0]?.seller_email;
+    if (email !== currentEmail) {
+      const existingSeller = await sql`
+        SELECT seller_id FROM public.sellers WHERE seller_email = ${email}
+      `;
+      const existingUser = await sql`
+        SELECT user_id FROM public.users WHERE user_email = ${email}
+      `;
+      if (existingSeller.length > 0 || existingUser.length > 0) {
+        return {
+          ...prevState,
+          errors: { user_email: ['Email already exists. Please use a different email address.'] },
+          fieldValues: {
+            user_first_name: validated.data.user_first_name,
+            user_last_name: validated.data.user_last_name,
+            user_email: validated.data.user_email,
+          }
+        };
+      }
+    }
+
+    let hashedPassword: string | undefined = undefined;
+    if (validated.data.user_password && validated.data.user_password.length > 0) {
+      const currentSellerPasswordResult = await sql`
+        SELECT seller_password FROM public.sellers WHERE seller_id = ${sellerId}
+      `;
+      const currentPassword = currentSellerPasswordResult[0]?.seller_password;
+      const passwordsDiffer = currentPassword && !(await bcrypt.compare(validated.data.user_password, currentPassword));
+      if (passwordsDiffer) {
+        hashedPassword = await bcrypt.hash(validated.data.user_password, 10);
+      }
+    }
+
+    let sellerImage: string | undefined = undefined;
+    const imageFile = formData.get('seller_image') as File | null;
+    if (imageFile && imageFile.size > 0) {
+      const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!validTypes.includes(imageFile.type)) {
+        return { ...prevState, message: 'Invalid image type. Only JPG, PNG, WebP allowed.' };
+      }
+      if (imageFile.size > 5 * 1024 * 1024) {
+        return { ...prevState, message: 'Image size too large. Max 5MB.' };
+      }
+      const bytes = await imageFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const uploadDir = join(process.cwd(), 'public', 'sellers');
+      await mkdir(uploadDir, { recursive: true });
+      const timestamp = Date.now();
+      const fileExtension = imageFile.type.split('/')[1];
+      const fileName = `${sellerId}-${timestamp}.${fileExtension}`;
+      const filePath = join(uploadDir, fileName);
+      await writeFile(filePath, buffer);
+      sellerImage = `sellers/${fileName}`;
+      const oldImageResult = await sql`
+        SELECT seller_image FROM public.sellers WHERE seller_id = ${sellerId}
+      `;
+      const oldImage = oldImageResult[0]?.seller_image;
+      if (oldImage) {
+        const oldPath = join(process.cwd(), 'public', oldImage);
+        try {
+          await unlink(oldPath);
+        } catch (err) {
+          console.warn('Failed to delete old image:', err);
+        }
+      }
+    }
+
+    await sql`
+      UPDATE public.sellers SET
+        seller_first_name = ${validated.data.user_first_name},
+        seller_last_name = ${validated.data.user_last_name},
+        seller_email = ${validated.data.user_email}
+        ${hashedPassword ? sql`, seller_password = ${hashedPassword}` : sql``}
+        ${sellerImage ? sql`, seller_image = ${sellerImage}` : sql``}
+      WHERE seller_id = ${sellerId}
+    `;
+
+    revalidatePath('/dashboard/account');
+    redirect('/dashboard');
+  } catch (error) {
+    if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+      throw error;
+    }
+    let errorMsg = 'Database Error: Failed to update account.';
+    if (error instanceof Error) {
+      errorMsg += ` ${error.message}`;
+    } else if (typeof error === 'string') {
+      errorMsg += ` ${error}`;
+    }
+    return {
+      message: errorMsg,
+      errors: {},
+      fieldValues: {
+        user_first_name: validated.data.user_first_name,
+        user_last_name: validated.data.user_last_name,
+        user_email: validated.data.user_email,
+      }
+    };
   }
 }

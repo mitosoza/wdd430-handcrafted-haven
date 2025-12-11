@@ -14,7 +14,7 @@ import clsx from 'clsx';
 const baseLinks = [
   {
     name: 'Account',
-    href: '/dashboard/account',
+    href: '/dashboard/account/{id}/edit',
     icon: UserIcon
   },
   {
