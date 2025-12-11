@@ -67,3 +67,15 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
     totalPages,
   ];
 };
+
+export const calculateAverageRating = (reviews: any[]) => {
+  if (!reviews || reviews.length === 0) return 0;
+  
+  const sum = reviews.reduce((acc, review) => {
+    // Assuming review.review_rating is a string or number, handle both safely
+    const rating = Number(review.review_rating);
+    return acc + (isNaN(rating) ? 0 : rating);
+  }, 0);
+  
+  return sum / reviews.length;
+};
